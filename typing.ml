@@ -34,9 +34,9 @@ let create_classtable classes =
       ClassTable.add name klass tb
   end table classes
 
-(* check : klass list -> ????? *)
+(* check : klass list -> unit *)
 let check classes =
   let table = create_classtable classes in
   (* For debugging *)
   ClassTable.iter (fun name klass -> print_endline name) table;
-  classes
+  ()

@@ -19,9 +19,12 @@ _build/
 setup.data
 setup.log
 
-.depend
+*.omc
+.omakedb
+.omakedb.lock
 lexer.ml
 main
+main.opt
 parser.ml
 parser.mli
 parser.output
