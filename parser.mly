@@ -24,20 +24,20 @@ class_definition :
         field_list
         constructor
         method_definition_list
-    RBRACE { { name = $2; super = $4; fields = $6; constructor = $7; methods = $8; } }
+    RBRACE { { Class.name = $2; super = $4; fields = $6; constructor = $7; methods = $8; } }
 
 field_list :
     { [] }
   | field_list field { $1 @ [$2] }
 
 field :
-    ID ID SEMICOLON { { name = $1; klass = $2; } }
+    ID ID SEMICOLON { { Field.name = $1; klass = $2; } }
 
 constructor :
     ID LPAREN parameter_list_opt RPAREN LBRACE
         SUPER LPAREN argument_list_opt RPAREN SEMICOLON
         field_initializer_list
-    RBRACE { { name = $1; parameters = $3; body = $11; super_arguments = $8; } }
+    RBRACE { { Constructor.name = $1; parameters = $3; body = $11; super_arguments = $8; } }
 
 parameter_list_opt :
     { [] }
@@ -75,7 +75,7 @@ method_definition_list :
 method_definition :
     ID ID LPAREN parameter_list_opt RPAREN LBRACE
         RETURN expression SEMICOLON
-    RBRACE { { name = $2; parameters = $4; body = $8; return_type = $1; } }
+    RBRACE { { Method.name = $2; parameters = $4; body = $8; return_type = $1; } }
 
 expression :
     ID { Var $1 }

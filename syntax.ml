@@ -8,31 +8,45 @@ type exp =
   | New of id * exp list
   | Cast of id * exp
 
-type field = {
+module Field = struct
+  type t = {
     name: id;
     klass: id;
-}
+  }
+end
 
-type constructor = {
+module Constructor = struct
+  type t = {
     name: id;
     parameters: (id * id) list;
     body: exp list;
     super_arguments: exp list;
-}
+  }
+end
 
-type method_type = {
+module Method = struct
+  type t = {
     name: id;
     parameters: (id * id) list;
     body: exp;
     return_type: id;
-}
+  }
+end
 
-type klass = {
+module Class = struct
+  type t = {
     name: id;
     super: id;
-    fields: field list;
-    constructor: constructor;
-    methods: method_type list;
-}
+    fields: Field.t list;
+    constructor: Constructor.t;
+    methods: Method.t list;
+  }
 
-type program = klass list
+  let name c = c.name
+  let super c = c.super
+  let fields c = c.fields
+  let constructor c = c.constructor
+  let methods c = c.methods
+end
+
+type program = Class.t list
