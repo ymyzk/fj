@@ -31,7 +31,7 @@ field_list :
   | field_list field { $1 @ [$2] }
 
 field :
-    ID ID SEMICOLON { { Field.name = $1; klass = $2; } }
+    ID ID SEMICOLON { { Field.name = $2; klass = $1; } }
 
 constructor :
     ID LPAREN parameter_list_opt RPAREN LBRACE

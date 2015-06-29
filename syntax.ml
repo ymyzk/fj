@@ -13,6 +13,9 @@ module Field = struct
     name: id;
     klass: id;
   }
+
+  let name c = c.name
+  let klass c = c.klass
 end
 
 module Constructor = struct

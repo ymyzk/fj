@@ -53,13 +53,32 @@ let check_class_super table name =
   in
     check_class_super table name (Class.super (get_class table name))
 
-(* check_class : Class.t ClassTable.t -> Class.t -> unit *)
-let check_class table klass =
-  check_class_super table (Class.name klass)
+(* check_field : Class.t ClassTable.t -> Class.t ClassTable.t -> Class.t -> Field.t -> unit *)
+let check_field table env klass field =
+  let name = Field.name field in
+  if ClassTable.mem name env then
+    raise (Type_error ("variable " ^ name ^ " is already defined in class " ^ (Class.name klass)));
+    ()
+
+let check_constructor table env klass = ()
+
+(* check_class : Class.t ClassTable.t -> Class.t ClassTable.t -> Class.t -> unit *)
+let check_class table env klass =
+  check_class_super table (Class.name klass);
+  let env' = ClassTable.add "this" (Class.name klass) env in
+  let env' = List.fold_left begin
+    fun env field ->
+      let name = Field.name field in
+      let ty = Field.klass field in
+      check_field table env klass field;
+      ClassTable.add name ty env
+  end env' (Class.fields klass) in
+  check_constructor table env' klass
 
 (* check_classtable : Class.t ClassTable.t -> unit *)
 let check_classtable table =
-  ClassTable.iter (fun _ k -> check_class table k) table
+  let env = ClassTable.empty in
+  ClassTable.iter (fun _ k -> check_class table env k) table
 
 (* check : Class.t list -> unit *)
 let check classes =
