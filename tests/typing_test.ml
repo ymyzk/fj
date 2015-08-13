@@ -102,10 +102,106 @@ let test_check_class_super test_cxt =
     assert_equal (check_class_super table "D") ()
   end
 
+let test_check_field test_cxt =
+  let type_b = Type.make "B" in
+  let class_a = {
+    Class.name = "A";
+    super = "Object";
+    fields = [
+      {
+        Field.name = "b1";
+        ty = type_b
+      };
+      {
+        Field.name = "b2";
+        ty = type_b
+      }
+    ];
+    constructor = {
+      Constructor.name = "A";
+      parameters = [];
+      body = [];
+      super_arguments = [];
+    };
+    methods = [];
+  } in
+  let env = Environment.empty in
+  let fields = Class.fields class_a in
+  let f1 = List.hd fields in
+  begin
+    (* 空の環境にフィールド b1 を追加 *)
+    assert_equal (check_field env class_a f1) ();
+    let env = Environment.add (Field.name f1) (Field.ty f1) env in
+    let f2 = List.nth fields 1 in
+    begin
+      (* b1 のみの環境にフィールド b2 を追加 *)
+      assert_equal (check_field env class_a f2) ();
+      (* b1 のみの環境にフィールド b1 を追加 *)
+      assert_raises
+        (Type_error "variable b1 is already defined in class A")
+        (fun _ -> (check_field env class_a f1))
+    end
+  end
+
+let test_check_fields test_cxt =
+  let type_b = Type.make "B" in
+  let class_a = {
+    Class.name = "A";
+    super = "Object";
+    fields = [
+      {
+        Field.name = "b1";
+        ty = type_b
+      };
+      {
+        Field.name = "b2";
+        ty = type_b
+      }
+    ];
+    constructor = {
+      Constructor.name = "A";
+      parameters = [];
+      body = [];
+      super_arguments = [];
+    };
+    methods = [];
+  } in
+  let class_c = {
+    Class.name = "C";
+    super = "Object";
+    fields = [
+      {
+        Field.name = "b1";
+        ty = type_b
+      };
+      {
+        Field.name = "b1";
+        ty = type_b
+      }
+    ];
+    constructor = {
+      Constructor.name = "C";
+      parameters = [];
+      body = [];
+      super_arguments = [];
+    };
+    methods = [];
+  } in
+  let env = check_fields Environment.empty class_a in
+  begin
+    assert_equal (Environment.find "b1" env) type_b;
+    assert_equal (Environment.find "b2" env) type_b;
+    assert_raises
+      (Type_error "variable b1 is already defined in class C")
+      (fun _ -> (check_fields Environment.empty class_c))
+  end
+
 let suite =
   "typing">::: [
     "test_create_classtable">:: test_create_classtable;
     "test_check_class_super">:: test_check_class_super;
+    "test_check_field">:: test_check_field;
+    "test_check_fields">:: test_check_fields;
     "test1">:: test1;
     "test2">:: test2]
 

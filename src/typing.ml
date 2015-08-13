@@ -91,13 +91,24 @@ let check_class_super table name =
   in
     check_class_super table name (Class.super (get_class table name))
 
-(* check_field : Class.t Environment.t -> Class.t Environment.t -> Class.t -> Field.t -> unit *)
+(* check_field : Type.t Environment.t -> Class.t -> Field.t -> unit *)
 (* フィールド名の重複チェック *)
-let check_field table env klass field =
+let check_field env klass field =
   let name = Field.name field in
   if Environment.mem name env then
     raise (Type_error ("variable " ^ name ^ " is already defined in class " ^ (Class.name klass)));
   ()
+
+(* check_fields : Type.t Environment.t -> Class.t -> Type.t Environment.t *)
+(* クラスのフィールドのチェックと env へのフィールドの追加 *)
+let check_fields env klass =
+  List.fold_left begin
+    fun env' field ->
+      let name = Field.name field in
+      let ty = Field.ty field in
+      check_field env' klass field;
+      Environment.add name ty env'
+  end env (Class.fields klass)
 
 (* check_constructor *)
 let rec check_constructor table env klass =
@@ -140,14 +151,8 @@ let rec check_constructor table env klass =
 (* check_class : Class.t Environment.t -> Class.t Environment.t -> Class.t -> unit *)
 let check_class table env klass =
   check_class_super table (Class.name klass);
-  let env' = Environment.add "this" (Class.name klass) env in
-  let env' = List.fold_left begin
-    fun env field ->
-      let name = Field.name field in
-      let ty = Field.ty field in
-      check_field table env klass field;
-      Environment.add name ty env
-  end env' (Class.fields klass) in
+  let env' = Environment.add "this" (Class.ty klass) env in
+  let env' = check_fields env' klass in
   check_constructor table env' klass
 
 (* check_classtable : Class.t Environment.t -> unit *)
