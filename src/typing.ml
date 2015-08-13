@@ -81,12 +81,13 @@ let rec check_exp table env = function
 (* check_class_super : Class.t Environment.t -> id -> unit *)
 let check_class_super table name =
   let rec check_class_super table name1 name2 =
-    if name1 = name2 then
+    let super_name = Class.super (get_class table name2) in
+    if name1 = name2 || name2 = super_name then
       raise (Type_error ("cyclic inheritance involving " ^ name1))
-    else if name1 = base_class_name || name2 = base_class_name then
+    else if name2 = base_class_name then
       ()
     else
-      check_class_super table name1 (Class.super (get_class table name2))
+      check_class_super table name1 super_name
   in
     check_class_super table name (Class.super (get_class table name))
 
