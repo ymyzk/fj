@@ -22,6 +22,7 @@ setup.log
 *.cache
 *.log
 *.omc
+*.swp
 .omakedb
 .omakedb.lock
 lexer.ml
