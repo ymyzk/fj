@@ -50,20 +50,19 @@ let rec is_subclasses table l0 l1 =
   | [], _ -> false
   | _, [] -> false
   | (k0 :: ks0), (k1 :: ks1) ->
-      begin
-        print_endline ((Type.name k1) ^ " <? " ^ (Type.name k0));
       (is_subclass table k0 k1) && (is_subclasses table ks0 ks1)
-      end
 
 (* get_field : Class.t -> id -> Class.t *)
-let rec get_field table klass name =
-  try
-    List.find (fun f -> Field.name f = name) (Class.fields klass)
-  with Not_found ->
-    if Class.ty klass = Class.ty base_class then
-      raise (Type_error ("the field '" ^ name ^ "' is not found in class: " ^ (Class.name klass)));
-    let super_klass = super_of table klass in
-    get_field table super_klass name
+let get_field table klass name =
+  let rec get_field table klass' name =
+    try
+      List.find (fun f -> Field.name f = name) (Class.fields klass')
+    with Not_found ->
+      if Class.ty klass' = Class.ty base_class then
+        raise (Type_error ("the field '" ^ name ^ "' is not found in class: " ^ (Class.name klass)));
+      let super_klass = super_of table klass' in
+      get_field table super_klass name in
+  get_field table klass name
 
 (* create_classtable : Class.t list -> Class.t Environment.t *)
 let create_classtable classes =
