@@ -8,43 +8,56 @@ type exp =
   | New of id * exp list
   | Cast of id * exp
 
+module Type = struct
+  type t = id
+
+  let make (n : id) : t = n
+  let name (t : t) : id = t
+end
+
 module Field = struct
   type t = {
     name: id;
-    klass: id;
+    ty: Type.t;
   }
 
-  let name c = c.name
-  let klass c = c.klass
+  let name f = f.name
+  let ty f = f.ty
 end
 
 module Constructor = struct
   type t = {
     name: id;
-    parameters: (id * id) list;
+    parameters: (id * Type.t) list;
     body: exp list;
     super_arguments: exp list;
   }
+
+  let name c = c.name
+  let parameters c = c.parameters
+  let body c = c.body
+  let super_arguments c = c.super_arguments
 end
 
 module Method = struct
   type t = {
     name: id;
-    parameters: (id * id) list;
+    parameters: (id * Type.t) list;
     body: exp;
-    return_type: id;
+    return_type: Type.t;
   }
 end
 
 module Class = struct
   type t = {
     name: id;
-    super: id;
+    super: Type.t;
     fields: Field.t list;
     constructor: Constructor.t;
     methods: Method.t list;
   }
 
+  let ty c = Type.make c.name
   let name c = c.name
   let super c = c.super
   let fields c = c.fields

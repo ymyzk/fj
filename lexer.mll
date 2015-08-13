@@ -1,4 +1,6 @@
 {
+open Lexing
+
 let reservedWords = [
   (* Keywords *)
   ("class", Parser.CLASS);
@@ -25,6 +27,8 @@ rule main = parse
     try
       List.assoc id reservedWords
     with
-      _ -> Parser.ID id
+(*       _ -> print_endline (Printf.sprintf "ID: %s l: %d" id (Lexing.lexeme_start lexbuf)); *)
+       _ -> print_endline (Printf.sprintf "ID: %s l: %d" id ((Lexing.lexeme_start_p lexbuf).pos_lnum)); 
+      Parser.ID id
   }
 | eof { Parser.EOF }

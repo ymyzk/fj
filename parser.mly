@@ -31,7 +31,7 @@ field_list :
   | field_list field { $1 @ [$2] }
 
 field :
-    ID ID SEMICOLON { { Field.name = $2; klass = $1; } }
+    ID ID SEMICOLON { { Field.name = $2; ty = $1; } }
 
 constructor :
     ID LPAREN parameter_list_opt RPAREN LBRACE
@@ -48,7 +48,7 @@ parameter_list :
   | parameter COMMA parameter_list { $1 :: $3 }
 
 parameter :
-    ID ID { ($1, $2) }
+    ID ID { ($2, $1) }
 
 argument_list_opt :
     { [] }

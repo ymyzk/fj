@@ -1,5 +1,6 @@
 open Typing
 
+(* 1つのファイルを読み込んでパース処理を行い, Type checker にかける *)
 let read_from_file file =
   print_endline ("Reading from " ^ file);
   let ic = open_in file in
