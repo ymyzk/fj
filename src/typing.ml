@@ -129,42 +129,93 @@ let check_fields env klass =
       Environment.add name ty env'
   end env (Class.fields klass)
 
-(* check_constructor *)
+(* コンストラクタのパラメーターを左から順に環境に追加 *)
+(* 追加する際にパラメータ名の重複チェックを行う *)
+(* check_constructor_parameters : Type.t Environment.t -> Constructor.t -> Type.t Environment.t *)
+let check_constructor_parameters env constructor =
+  let parameters = Constructor.parameters constructor in
+  List.fold_left
+    (fun e (k, n) ->
+(*
+      if Environment.mem k e then
+        raise (Type_error (
+          "variable " ^ k ^ " is already defined in constructor "
+          ^ (Constructor.name constructor)))
+      else
+*)
+        Environment.add k n e)
+  env parameters
+
+(* すべてのパラメータがフィールドの初期化かスーパークラスのコンストラクタ呼び出しに利用されているかをチェック *)
+let check_constructor_parameters_used env constructor =
+  let parameters =
+      List.map (fun (n, _) -> n) (Constructor.parameters constructor) in
+  let parameters = List.sort compare parameters in
+  let fields =
+    List.map
+      (function FieldSet(_, _, Var(n)) -> n | _ -> raise (Type_error "unknown"))
+      (Constructor.body constructor) in
+  let fields = List.sort compare fields in
+  let arguments =
+    List.map
+      (function Var(n) -> n | _ -> raise (Type_error "unknown"))
+      (Constructor.super_arguments constructor) in
+  let fields_and_arguments = List.sort compare (fields @ arguments) in
+  if parameters = fields_and_arguments then
+    ()
+  else
+    raise (Type_error (
+      "incorrect parameter use in the constructor of class " ^ (Constructor.name constructor)))
+
+(* コンストラクタ本体 (フィールドの初期化) の型チェック *)
+let check_constructor_fields table env constructor =
+  List.iter
+    (fun e -> ignore (check_exp table env e))
+    (Constructor.body constructor)
+
+(* スーパークラスのコンストラクタ呼び出しの型チェック *)
+let check_constructor_super table env klass =
+  let constructor = Class.constructor klass in
+  (* クラスの型が Object でなければ *)
+  if Class.ty klass = Class.ty base_class then
+    ()
+  else
+    (* スーパークラスを取得 *)
+    let super_klass = super_of table klass in
+    (* スーパークラスのコンストラクタに渡される引数を取得 *)
+    let arguments = Constructor.super_arguments constructor in
+    (* スーパークラスのコンストラクタに渡される引数の型を取得 *)
+    let argument_types = List.map (check_exp table env) arguments in
+    (* スーパークラスのコンストラクタの引数の型を取得 *)
+    let parameter_types = List.map (fun (_, ty) -> ty) (Constructor.parameters (Class.constructor super_klass)) in
+    if List.length argument_types <> List.length parameter_types then
+      (* 引数の数が正しくない *)
+      raise (Type_error (
+        "super: argument lists differ in length for class "
+        ^ (Class.name super_klass)))
+    else if is_subclasses table parameter_types argument_types then
+      (* OK *)
+      ()
+    else
+      (* スーパークラスのコンストラクタと型が合わない *)
+      raise (Type_error (
+        "cannot invoke a super class constructor in the constructor of class "
+        ^ (Class.name super_klass)))
+
+(* check_constructor : Class.t Environment.t -> Type.t Environment.t -> Class.t -> unit *)
 let rec check_constructor table env klass =
   let constructor = Class.constructor klass in
   (* コンストラクタの名前はクラスの名前と同じ *)
   if Class.name klass <> Constructor.name constructor then
     raise (Type_error ("invalid constructor name"));
-  let parameters = Constructor.parameters constructor in
-(*   List.iter (fun (p, ty) -> print_endline p) parameters; *)
-  (* コンストラクタのパラメーターを左から順に環境に追加 *)
-  let env' = List.fold_left (fun e (k, n) -> Environment.add k n e) env parameters in
-(*
-  print_endline "ENV";
-  Environment.iter (fun name klass -> print_endline (name ^ " " ^ klass)) env';
-  print_endline "/ENV";
-*)
-  (* コンストラクタ本体の型チェック *)
-  List.iter (fun e -> ignore (check_exp table env' e)) (Constructor.body constructor);
-  if not (Class.ty klass = Class.ty base_class) then
-    begin
-      (* スーパークラスのコンストラクタ呼び出しの型チェック *)
-      let super_klass = super_of table klass in
-(*
-      print_endline ("CLASS: " ^ (Class.name klass));
-      print_endline ("SUPER: " ^ (Class.name super_klass));
-*)
-      let super_arguments = Constructor.super_arguments constructor in
-      let super_arguments_types = List.map (check_exp table env') super_arguments in
-      let super_parameters_types = List.map (fun (_, ty) -> ty) (Constructor.parameters (Class.constructor super_klass)) in
-(*
-      if List.length super_arguments_types <> List.length super_parameters_types then
-        raise (Type_error "super error")
-*)
-      List.iter (fun tp -> print_endline tp) super_arguments_types;
-      List.iter (fun tp -> print_endline tp) super_parameters_types;
-      check_constructor table env super_klass
-    end;
+  (* パラメータのチェックと環境への追加 *)
+  let env' = check_constructor_parameters env constructor in
+  (* フィールドの初期化のチェック *)
+  check_constructor_fields table env' constructor;
+  (* スーパークラスコンストラクタ呼び出しのチェック *)
+  check_constructor_super table env' klass;
+  (* 全てのパラメータが重複なく利用されているかチェック *)
+  check_constructor_parameters_used env constructor;
   ()
 
 (* check_class : Class.t Environment.t -> Class.t Environment.t -> Class.t -> unit *)
