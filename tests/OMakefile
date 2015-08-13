@@ -23,7 +23,7 @@
 #
 
 # .PHONY: all install clean
-.PHONY: clean
+.PHONY: all clean test
 
 ########################################################################
 # Subdirectories.
@@ -31,7 +31,7 @@
 # If so, define the subdirectory targets and uncomment this section.
 #
 
-.SUBDIRS: src tests
+# .SUBDIRS:
 
 ########################################################################
 # OCaml configuration.
@@ -46,21 +46,20 @@
 #
 # This project requires ocamlfind (default - false).
 #
-# USE_OCAMLFIND = true
+USE_OCAMLFIND = true
 
-# OCAMLPACKS[] =
-#    pack1
-#    pack2
+OCAMLPACKS[] =
+    oUnit
 
-# if $(not $(OCAMLFIND_EXISTS))
-#    eprintln(This project requires ocamlfind, but is was not found.)
-#    eprintln(You need to install ocamlfind and run "omake --configure".)
-#    exit 1
+if $(not $(OCAMLFIND_EXISTS))
+   eprintln(This project requires ocamlfind, but is was not found.)
+   eprintln(You need to install ocamlfind and run "omake --configure".)
+   exit 1
 
 #
 # Include path
 #
-# OCAMLINCLUDES +=
+OCAMLINCLUDES += ../src
 
 #
 # Compile native or byte code?
@@ -86,40 +85,29 @@ BYTE_ENABLED = $(not $(OCAMLOPT_EXISTS))
 # Workaround for the fact that ocamldep does not pay attention to .mll
 # and .mly files.
 #
-# OCamlGeneratedFiles(lexer.ml parser.ml parser.mli)
-
-################################################
-# Build an OCaml library
-#
-
-# FILES[] =
-#    file1
-#    file2
-
-# LIB = main
-#
-# .DEFAULT: $(OCamlLibrary $(LIB), $(FILES))
 
 ################################################
 # Build an OCaml program
 #
 
-# FILES[] =
-#     lexer
-#     parser
-#     syntax
-#     typing
-#     main
-#
-# PROGRAM = main
-# OCAML_LIBS +=
+FILES[] =
+    test_test
+
+PROGRAM = test
+
+OCAML_LIBS += ../src/target
 # OCAML_CLIBS +=
 # OCAML_OTHER_LIBS +=
 # OCAML_LIB_FLAGS +=
 
-# .DEFAULT: $(OCamlProgram $(PROGRAM), $(FILES))
+.DEFAULT: all
+
+all: $(OCamlProgram $(PROGRAM), $(FILES))
+
+test: all
+    ./$(PROGRAM)
 
 clean:
-# rm -f \
-#     $(filter-proper-targets $(glob $(addsuffix .*, $(FILES)))) \
-#     $(PROGRAM).run $(PROGRAM).opt
+rm -f \
+    $(filter-proper-targets $(glob $(addsuffix .*, $(FILES)))) \
+    $(PROGRAM) $(PROGRAM).run $(PROGRAM).opt

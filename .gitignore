@@ -19,6 +19,8 @@ _build/
 setup.data
 setup.log
 
+*.cache
+*.log
 *.omc
 .omakedb
 .omakedb.lock
