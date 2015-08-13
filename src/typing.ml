@@ -64,6 +64,18 @@ let get_field table klass name =
       get_field table super_klass name in
   get_field table klass name
 
+(* get_method : Class.t -> id -> Class.t *)
+let get_method table klass name =
+  let rec get_method table klass' name =
+    try
+      List.find (fun m -> Method.name m = name) (Class.methods klass')
+    with Not_found ->
+      if Class.ty klass' = Class.ty base_class then
+        raise (Type_error ("the method '" ^ name ^ "' is not found in class: " ^ (Class.name klass)));
+      let super_klass = super_of table klass' in
+      get_method table super_klass name in
+  get_method table klass name
+
 (* create_classtable : Class.t list -> Class.t Environment.t *)
 let create_classtable classes =
   let table = Environment.singleton (Class.name base_class) base_class in
@@ -81,6 +93,10 @@ let rec check_exp table env = function
       Environment.find n0 env
   | Var(n0) ->
       raise (Type_error ("'" ^ n0 ^ "' is not found in the environment"))
+  | FieldGet(e0, n0) -> (* e0.n0 *)
+      let k0 = get_class table (check_exp table env e0) in
+      let f0 = get_field table k0 n0 in
+      Field.ty f0
   | FieldSet(e0, n0, e1) -> (* e0.n0 = e1; *)
       begin match e0, n0, e1 with
       | (Var "this"), _, (Var _) ->
@@ -93,7 +109,44 @@ let rec check_exp table env = function
         t0
       | _, _, _ -> raise (Type_error "not supported")
       end
-  | _ -> raise (Type_error "not implemented")
+  | MethodCall(e0, n0, ps0) -> (* e0.m0(ps0) *)
+      let ts0 = List.map (fun p -> check_exp table env p) ps0 in
+      let k0 = get_class table (Type.name (check_exp table env e0)) in
+      let m0 = get_method table k0 n0 in
+      let ts1 = List.map (fun (_, ty) -> ty) (Method.parameters m0) in
+      if is_subclasses table ts1 ts0 then
+        Method.return_type m0
+      else
+        raise (Type_error (
+          "cannot invoke a method " ^ n0))
+  | New(t0, ps0) -> (* new t0(ps0) *)
+      let pt0 = List.map (fun p -> check_exp table env p) ps0 in
+      let k0 = get_class table t0 in
+      let pt1 =
+        List.map
+          (fun (_, ty) -> ty)
+          (Constructor.parameters (Class.constructor k0)) in
+      if is_subclasses table pt1 pt0 then
+        Class.ty k0
+      else
+        raise (Type_error (
+          "cannot invoke a class constructor " ^ (Class.name k0)))
+  | Cast(t0, e0) -> (* (t0)e0 *)
+      let t1 = check_exp table env e0 in
+      if is_subclass table t0 t1 then
+        (* up cast *)
+        t0
+      else if is_subclass table t1 t0 then
+        (* down cast *)
+        t0
+      else
+        (* stupid cast *)
+        begin
+        print_endline (
+          "stupid cast from class '" ^ (Type.name t1)
+          ^ "' to class '" ^ (Type.name t0) ^ "'");
+        t0
+        end
 
 (* check_class_super : Class.t Environment.t -> id -> unit *)
 let check_class_super table name =
@@ -223,15 +276,35 @@ let rec check_constructor table env klass =
   check_constructor_parameters_used env constructor;
   ()
 
+let check_method table env meth =
+  (* パラメータを環境に追加 *)
+  let env' =
+    List.fold_left
+      (fun e (n, t) -> Environment.add n t e)
+      env (Method.parameters meth) in
+  (* メソッドの内部の型をチェック *)
+  let ty = check_exp table env' (Method.body meth) in
+  (* 戻り値と型が合うかどうか *)
+  if is_subclass table (Method.return_type meth) ty then
+    ()
+  else
+    raise (Type_error ("return type error"))
+
+let check_methods table env klass =
+  List.iter (fun m -> check_method table env m) (Class.methods klass)
+
 (* check_class : Class.t Environment.t -> Class.t Environment.t -> Class.t -> unit *)
 let check_class table env klass =
   check_class_super table (Class.name klass);
   let env' = Environment.add "this" (Class.ty klass) env in
+  (* フィールドのチェック *)
   let env' = check_fields env' klass in
   (* 初期化されていないフィールドが存在しないかのチェック *)
   check_uninitialized_fields klass;
   (* コンストラクタのチェック *)
-  check_constructor table env' klass
+  check_constructor table env' klass;
+  (* メソッドのチェック *)
+  check_methods table env' klass
 
 (* check_classtable : Class.t Environment.t -> unit *)
 let check_classtable table =

@@ -47,6 +47,7 @@ module Method = struct
     return_type: Type.t;
   }
 
+  let name m = m.name
   let parameters m = m.parameters
   let body m = m.body
   let return_type m = m.return_type
