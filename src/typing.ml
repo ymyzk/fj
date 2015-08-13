@@ -132,7 +132,7 @@ let check_fields env klass =
 let check_uninitialized_fields klass =
   let constructor_fields =
     List.map
-      (function FieldSet(_, _, Var(n)) -> n | _ -> raise (Type_error "unknown"))
+      (function FieldSet(_, n, _) -> n | _ -> raise (Type_error "unknown"))
       (Constructor.body (Class.constructor klass)) in
   let constructor_fields = List.sort compare constructor_fields in
   let class_fields = List.map (fun f -> Field.name f) (Class.fields klass) in
