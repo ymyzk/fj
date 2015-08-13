@@ -46,6 +46,10 @@ module Method = struct
     body: exp;
     return_type: Type.t;
   }
+
+  let parameters m = m.parameters
+  let body m = m.body
+  let return_type m = m.return_type
 end
 
 module Class = struct
