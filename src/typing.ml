@@ -30,17 +30,30 @@ let get_class table name =
   with Not_found ->
     raise (Type_error ("the class is not found in table: " ^ name))
 
-let super_of table klass = get_class table (Type.name (Class.super klass))
+let super_of table klass =
+  get_class table (Type.name (Class.super klass))
 
-let is_subclass table k0 k1 =
-  let rec is_subclass table k0 k1 =
-    if k0 = k1 then
-      true
-    else if k1 = base_class_name then
-      false
-    else
-      is_subclass table k0 (Class.super (get_class table k1)) in
-  is_subclass table k0 k1
+(* k1 は k0 のサブクラスかどうか *)
+let rec is_subclass table k0 k1 =
+  if k0 = k1 then
+    true
+  else if k1 = base_class_name then
+    false
+  else
+    is_subclass table k0 (Class.super (get_class table k1))
+
+(* l1 と l0 のそれぞれ n 番目の要素 k1, k0 について, k1 は k0 のサブクラスかどうか *)
+(* is_subclasses : Class.t Environment.t -> Type.t list -> Type.t list -? bool *)
+let rec is_subclasses table l0 l1 =
+  match l0, l1 with
+  | [], [] -> true
+  | [], _ -> false
+  | _, [] -> false
+  | (k0 :: ks0), (k1 :: ks1) ->
+      begin
+        print_endline ((Type.name k1) ^ " <? " ^ (Type.name k0));
+      (is_subclass table k0 k1) && (is_subclasses table ks0 ks1)
+      end
 
 (* get_field : Class.t -> id -> Class.t *)
 let rec get_field table klass name =
