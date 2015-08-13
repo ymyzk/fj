@@ -129,22 +129,26 @@ let check_fields env klass =
       Environment.add name ty env'
   end env (Class.fields klass)
 
+let check_uninitialized_fields klass =
+  let constructor_fields =
+    List.map
+      (function FieldSet(_, _, Var(n)) -> n | _ -> raise (Type_error "unknown"))
+      (Constructor.body (Class.constructor klass)) in
+  let constructor_fields = List.sort compare constructor_fields in
+  let class_fields = List.map (fun f -> Field.name f) (Class.fields klass) in
+  let class_fields = List.sort compare class_fields in
+  if constructor_fields <> class_fields then
+    raise (Type_error ("uninialized fields in class " ^ (Class.name klass)))
+  else
+    ()
+
 (* コンストラクタのパラメーターを左から順に環境に追加 *)
 (* 追加する際にパラメータ名の重複チェックを行う *)
 (* check_constructor_parameters : Type.t Environment.t -> Constructor.t -> Type.t Environment.t *)
 let check_constructor_parameters env constructor =
   let parameters = Constructor.parameters constructor in
   List.fold_left
-    (fun e (k, n) ->
-(*
-      if Environment.mem k e then
-        raise (Type_error (
-          "variable " ^ k ^ " is already defined in constructor "
-          ^ (Constructor.name constructor)))
-      else
-*)
-        Environment.add k n e)
-  env parameters
+    (fun e (k, n) -> Environment.add k n e) env parameters
 
 (* すべてのパラメータがフィールドの初期化かスーパークラスのコンストラクタ呼び出しに利用されているかをチェック *)
 let check_constructor_parameters_used env constructor =
@@ -161,11 +165,12 @@ let check_constructor_parameters_used env constructor =
       (function Var(n) -> n | _ -> raise (Type_error "unknown"))
       (Constructor.super_arguments constructor) in
   let fields_and_arguments = List.sort compare (fields @ arguments) in
-  if parameters = fields_and_arguments then
-    ()
-  else
+  if parameters <> fields_and_arguments then
+    (* コンストラクタの引数で利用されていないものがある *)
     raise (Type_error (
       "incorrect parameter use in the constructor of class " ^ (Constructor.name constructor)))
+  else
+    ()
 
 (* コンストラクタ本体 (フィールドの初期化) の型チェック *)
 let check_constructor_fields table env constructor =
@@ -223,6 +228,9 @@ let check_class table env klass =
   check_class_super table (Class.name klass);
   let env' = Environment.add "this" (Class.ty klass) env in
   let env' = check_fields env' klass in
+  (* 初期化されていないフィールドが存在しないかのチェック *)
+  check_uninitialized_fields klass;
+  (* コンストラクタのチェック *)
   check_constructor table env' klass
 
 (* check_classtable : Class.t Environment.t -> unit *)
