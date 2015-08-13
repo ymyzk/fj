@@ -79,7 +79,8 @@ method_definition :
 
 expression :
     ID { Var $1 }
+  | THIS { Var "this" }
   | expression PERIOD ID { FieldGet ($1, $3) }
-  | expression PERIOD ID LPAREN argument_list RPAREN { MethodCall ($1, $3, $5) }
-  | NEW ID LPAREN argument_list RPAREN { New ($2, $4) }
+  | expression PERIOD ID LPAREN argument_list_opt RPAREN { MethodCall ($1, $3, $5) }
+  | NEW ID LPAREN argument_list_opt RPAREN { New ($2, $4) }
   | LPAREN ID RPAREN expression { Cast ($2, $4) }
