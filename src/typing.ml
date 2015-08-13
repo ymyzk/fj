@@ -76,19 +76,24 @@ let create_classtable classes =
       Environment.add name klass tb
   end table classes
 
+(* check_exp : Class.t Environment.t -> Type.t Environment.t -> Type.t *)
 let rec check_exp table env = function
   | Var(n0) when Environment.mem n0 env ->
       Environment.find n0 env
   | Var(n0) ->
       raise (Type_error ("'" ^ n0 ^ "' is not found in the environment"))
-  | FieldSet(e0, n0, e1) ->
-      let k0 = get_class table (check_exp table env e0) in
-      let f0 = get_field table k0 n0 in
-      let t0 = Field.ty f0 in
-      let t1 = check_exp table env e1 in
-      if not (is_subclass table t0 t1) then
-        raise (Type_error ("'" ^ t0 ^ "' is not a subclass of '" ^ t1 ^ "'"));
-      t0
+  | FieldSet(e0, n0, e1) -> (* e0.n0 = e1; *)
+      begin match e0, n0, e1 with
+      | (Var "this"), _, (Var _) ->
+        let k0 = get_class table (check_exp table env e0) in (* e0 (this) : k0 *)
+        let f0 = get_field table k0 n0 in
+        let t0 = Field.ty f0 in (* e0.n0 : t0 *)
+        let t1 = check_exp table env e1 in (* e1 : t1 *)
+        if not (is_subclass table t0 t1) then
+          raise (Type_error ("'" ^ t1 ^ "' is not a subclass of '" ^ t0 ^ "'"));
+        t0
+      | _, _, _ -> raise (Type_error "not supported")
+      end
   | _ -> raise (Type_error "not implemented")
 
 (* check_class_super : Class.t Environment.t -> id -> unit *)
