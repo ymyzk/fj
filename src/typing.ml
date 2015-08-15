@@ -157,7 +157,7 @@ let rec check_exp table env = function
         begin
           (* エラーメッセージを出力するが処理は続ける *)
           Printf.eprintf
-            "stupid cast from class '%s' to class '%s'"
+            "stupid cast from class '%s' to class '%s'\n"
             (Type.name t1) (Type.name t0);
           t0
         end
