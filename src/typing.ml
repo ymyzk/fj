@@ -123,7 +123,7 @@ let rec check_exp table env = function
       | _, _, _ -> raise (Type_error "not supported")
       end
   | MethodCall(e0, n0, ps0) -> (* e0.m0(ps0) *)
-      let ts0 = List.map (fun p -> check_exp table env p) ps0 in
+      let ts0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table (Type.name (check_exp table env e0)) in
       let m0 = get_method table k0 n0 in
       let ts1 = List.map (fun (_, ty) -> ty) (Method.parameters m0) in
@@ -133,7 +133,7 @@ let rec check_exp table env = function
         raise (Type_error (
           "cannot invoke a method " ^ n0))
   | New(t0, ps0) -> (* new t0(ps0) *)
-      let pt0 = List.map (fun p -> check_exp table env p) ps0 in
+      let pt0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table t0 in
       let pt1 =
         List.map
@@ -205,7 +205,7 @@ let check_uninitialized_fields klass =
       (function FieldSet(_, n, _) -> n | _ -> raise (Type_error "unknown"))
       (Constructor.body (Class.constructor klass)) in
   let constructor_fields = List.sort compare constructor_fields in
-  let class_fields = List.map (fun f -> Field.name f) (Class.fields klass) in
+  let class_fields = List.map Field.name (Class.fields klass) in
   let class_fields = List.sort compare class_fields in
   (* コンストラクタ内で初期化されているフィールドの名前のリストと
    * クラスで定義されているフィールドの名前のリストを比較 *)
