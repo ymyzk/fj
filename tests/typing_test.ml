@@ -3,15 +3,11 @@ open OUnit2
 open Syntax
 open Typing
 
-let test1 test_ctxt = assert_equal "x" "x"
-
-let test2 test_ctxt = assert_equal 100 (1 + 99)
-
 let test_create_classtable test_cxt =
   let classes = [
     {
       Class.name = "A";
-      super = "object";
+      super = "Object";
       fields = [];
       constructor = {
         Constructor.name = "A";
@@ -39,6 +35,89 @@ let test_create_classtable test_cxt =
     assert_equal (Environment.find "A" table) (List.hd classes);
     assert_equal (Environment.find "B" table) (List.nth classes 1)
   end
+
+let test_is_subclass test_cxt =
+  let classes = [
+    {
+      Class.name = "A";
+      super = "Object";
+      fields = [];
+      constructor = {
+        Constructor.name = "A";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [];
+    };
+    {
+      Class.name = "B";
+      super = "A";
+      fields = [];
+      constructor = {
+        Constructor.name = "B";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [];
+    };
+    {
+      Class.name = "C";
+      super = "B";
+      fields = [];
+      constructor = {
+        Constructor.name = "C";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [];
+    };
+    {
+      Class.name = "D";
+      super = "A";
+      fields = [];
+      constructor = {
+        Constructor.name = "D";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [];
+    }
+  ] in
+  let table = create_classtable classes in
+  let type_o = Type.make "Object" in
+  let type_a = Class.ty (get_class table "A") in
+  let type_b = Class.ty (get_class table "B") in
+  let type_c = Class.ty (get_class table "C") in
+  let type_d = Class.ty (get_class table "D") in
+  assert_equal (is_subclass table type_o type_o) true;
+  assert_equal (is_subclass table type_o type_a) true;
+  assert_equal (is_subclass table type_o type_b) true;
+  assert_equal (is_subclass table type_o type_c) true;
+  assert_equal (is_subclass table type_o type_d) true;
+  assert_equal (is_subclass table type_a type_o) false;
+  assert_equal (is_subclass table type_a type_a) true;
+  assert_equal (is_subclass table type_a type_b) true;
+  assert_equal (is_subclass table type_a type_c) true;
+  assert_equal (is_subclass table type_a type_d) true;
+  assert_equal (is_subclass table type_b type_o) false;
+  assert_equal (is_subclass table type_b type_a) false;
+  assert_equal (is_subclass table type_b type_b) true;
+  assert_equal (is_subclass table type_b type_c) true;
+  assert_equal (is_subclass table type_b type_d) false;
+  assert_equal (is_subclass table type_c type_o) false;
+  assert_equal (is_subclass table type_c type_a) false;
+  assert_equal (is_subclass table type_c type_b) false;
+  assert_equal (is_subclass table type_c type_c) true;
+  assert_equal (is_subclass table type_c type_d) false;
+  assert_equal (is_subclass table type_d type_o) false;
+  assert_equal (is_subclass table type_d type_a) false;
+  assert_equal (is_subclass table type_d type_b) false;
+  assert_equal (is_subclass table type_d type_c) false;
+  assert_equal (is_subclass table type_d type_d) true
 
 let test_check_class_super test_cxt =
   let classes = [
@@ -199,10 +278,9 @@ let test_check_fields test_cxt =
 let suite =
   "typing">::: [
     "test_create_classtable">:: test_create_classtable;
+    "test_is_subclass">:: test_is_subclass;
     "test_check_class_super">:: test_check_class_super;
     "test_check_field">:: test_check_field;
-    "test_check_fields">:: test_check_fields;
-    "test1">:: test1;
-    "test2">:: test2]
+    "test_check_fields">:: test_check_fields]
 
 let () = run_test_tt_main suite
