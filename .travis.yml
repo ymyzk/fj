@@ -1,0 +1,11 @@
+language: c
+sudo: required
+before_install: wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/master/.travis-ocaml.sh
+install:
+  - bash -ex .travis-ocaml.sh
+  - eval $(opam config env)
+  - opam install menhir omake ounit
+script:
+  - omake test
+env:
+  - OCAML_VERSION=4.02 OPAMYES=1
