@@ -119,6 +119,44 @@ let test_is_subclass test_cxt =
   assert_equal (is_subclass table type_d type_c) false;
   assert_equal (is_subclass table type_d type_d) true
 
+let test_is_subclasses test_cxt =
+  let classes = [
+    {
+      Class.name = "A";
+      super = "Object";
+      fields = [];
+      constructor = {
+        Constructor.name = "A";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [];
+    };
+    {
+      Class.name = "B";
+      super = "A";
+      fields = [];
+      constructor = {
+        Constructor.name = "B";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [];
+    }
+  ] in
+  let table = create_classtable classes in
+  let type_o = Type.make "Object" in
+  let type_a = Class.ty (get_class table "A") in
+  let type_b = Class.ty (get_class table "B") in
+  assert_equal (is_subclasses table [] []) true;
+  assert_equal (is_subclasses table [] [type_a]) false;
+  assert_equal (is_subclasses table [type_a] []) false;
+  assert_equal (is_subclasses table [type_o] [type_a]) true;
+  assert_equal (is_subclasses table [type_o; type_b] [type_a; type_a]) false;
+  assert_equal (is_subclasses table [type_o; type_b] [type_a; type_b]) true
+
 let test_check_class_super test_cxt =
   let classes = [
     {
@@ -279,6 +317,7 @@ let suite =
   "typing">::: [
     "test_create_classtable">:: test_create_classtable;
     "test_is_subclass">:: test_is_subclass;
+    "test_is_subclasses">:: test_is_subclasses;
     "test_check_class_super">:: test_check_class_super;
     "test_check_field">:: test_check_field;
     "test_check_fields">:: test_check_fields]
