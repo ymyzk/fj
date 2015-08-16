@@ -23,17 +23,21 @@ let read_from_file file =
     begin match e with
       Failure message ->
         let message = sprintf "failure: %s" message in
-        print_info file message
+        print_info file message;
+        exit 1
     | Lexer.Lexer_error ->
         let token = Lexing.lexeme lexbuf in
         let message = sprintf "lexer error: unexpected token '%s'" token in
-        print_error file lexbuf message
+        print_error file lexbuf message;
+        exit 1
     | Parser.Error -> (* Menhir *)
         let token = Lexing.lexeme lexbuf in
         let message = sprintf "parser error: unexpected token '%s'" token in
-        print_error file lexbuf message
+        print_error file lexbuf message;
+        exit 1
     | Type_error message ->
-        print_info file message
+        print_info file message;
+        exit 1
     | _ ->
         close_in_noerr ic;
         print_info file "unknown error";
