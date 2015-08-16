@@ -157,6 +157,59 @@ let test_is_subclasses test_cxt =
   assert_equal (is_subclasses table [type_o; type_b] [type_a; type_a]) false;
   assert_equal (is_subclasses table [type_o; type_b] [type_a; type_b]) true
 
+let test_get_field test_cxt =
+  let field_o1 = {
+    Field.name = "o1";
+    ty = Type.make "Object";
+  } in
+  let field_o2 = {
+    Field.name = "o2";
+    ty = Type.make "Object";
+  } in
+  let field_a1 = {
+    Field.name = "a1";
+    ty = Type.make "A";
+  } in
+  let classes = [
+    {
+      Class.name = "A";
+      super = "Object";
+      fields = [field_o1];
+      constructor = {
+        Constructor.name = "A";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [];
+    };
+    {
+      Class.name = "B";
+      super = "A";
+      fields = [field_o2; field_a1];
+      constructor = {
+        Constructor.name = "B";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [];
+    }
+  ] in
+  let table = create_classtable classes in
+  let class_a = get_class table "A" in
+  let class_b = get_class table "B" in
+  (* 同じクラス内のフィールドの取得 *)
+  assert_equal (get_field table class_a "o1") field_o1;
+  assert_equal (get_field table class_b "o2") field_o2;
+  assert_equal (get_field table class_b "a1") field_a1;
+  (* super まで探しに行く *)
+  assert_equal (get_field table class_b "o1") field_o1;
+  (* 存在しないフィールドの取得 *)
+  assert_raises
+    (Type_error "the field 'o3' is not found in class: B")
+    (fun _ -> get_field table class_b "o3")
+
 let test_check_class_super test_cxt =
   let classes = [
     {
@@ -318,6 +371,7 @@ let suite =
     "test_create_classtable">:: test_create_classtable;
     "test_is_subclass">:: test_is_subclass;
     "test_is_subclasses">:: test_is_subclasses;
+    "test_get_field">:: test_get_field;
     "test_check_class_super">:: test_check_class_super;
     "test_check_field">:: test_check_field;
     "test_check_fields">:: test_check_fields]
