@@ -126,7 +126,7 @@ let rec check_exp table env = function
       let ts0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table (Type.name (check_exp table env e0)) in
       let m0 = get_method table k0 n0 in
-      let ts1 = List.map (fun (_, ty) -> ty) (Method.parameters m0) in
+      let ts1 = List.map snd (Method.parameters m0) in
       if is_subclasses table ts1 ts0 then
         Method.return_type m0
       else
@@ -135,10 +135,7 @@ let rec check_exp table env = function
   | New(t0, ps0) -> (* new t0(ps0) *)
       let pt0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table t0 in
-      let pt1 =
-        List.map
-          (fun (_, ty) -> ty)
-          (Constructor.parameters (Class.constructor k0)) in
+      let pt1 = List.map snd (Constructor.parameters (Class.constructor k0)) in
       if is_subclasses table pt1 pt0 then
         Class.ty k0
       else
@@ -225,7 +222,7 @@ let check_constructor_parameters env constructor =
 (* Constructor.t -> unit *)
 let check_constructor_parameters_used constructor =
   let parameters =
-      List.map (fun (n, _) -> n) (Constructor.parameters constructor) in
+      List.map fst (Constructor.parameters constructor) in
   let parameters = List.sort compare parameters in
   let fields =
     List.map
@@ -267,7 +264,7 @@ let check_constructor_super table env klass =
     (* スーパークラスのコンストラクタに渡される引数の型を取得 *)
     let argument_types = List.map (check_exp table env) arguments in
     (* スーパークラスのコンストラクタの引数の型を取得 *)
-    let parameter_types = List.map (fun (_, ty) -> ty) (Constructor.parameters (Class.constructor super_klass)) in
+    let parameter_types = List.map snd (Constructor.parameters (Class.constructor super_klass)) in
     if List.length argument_types <> List.length parameter_types then
       (* 引数の数が正しくない *)
       raise (Type_error (
@@ -318,7 +315,7 @@ let check_method table env meth =
 (* クラスのすべてのメソッドのチェック *)
 (* Class.t Environment.t -> Type.t Environment.t -> Class.t -> unit *)
 let check_methods table env klass =
-  List.iter (fun m -> check_method table env m) (Class.methods klass)
+  List.iter (check_method table env) (Class.methods klass)
 
 (* クラスのチェック *)
 (* Class.t Environment.t -> Type.t Environment.t -> Class.t -> unit *)

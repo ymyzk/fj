@@ -47,4 +47,4 @@ let _ =
     (fun file -> files := file :: !files)
     "Featherweight Java type checker";
   (* コマンドライン引数の順番とリストの順番が逆になっているので rev *)
-  List.iter (fun f -> read_from_file f) (List.rev !files)
+  List.iter read_from_file (List.rev !files)
