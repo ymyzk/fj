@@ -210,6 +210,67 @@ let test_get_field test_cxt =
     (Type_error "the field 'o3' is not found in class: B")
     (fun _ -> get_field table class_b "o3")
 
+let test_get_method test_cxt =
+  let type_o = Type.make "Object" in
+  let type_a = Type.make "A" in
+  let method_a1 = {
+    Method.name = "a1";
+    parameters = [];
+    body = New("Object", []);
+    return_type = type_o;
+  } in
+  let method_b1 = {
+    Method.name = "b1";
+    parameters = [];
+    body = New("Object", []);
+    return_type = type_o;
+  } in
+  let method_b2 = {
+    Method.name = "b2";
+    parameters = [];
+    body = New("A", []);
+    return_type = type_a;
+  } in
+  let classes = [
+    {
+      Class.name = "A";
+      super = "Object";
+      fields = [];
+      constructor = {
+        Constructor.name = "A";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [method_a1];
+    };
+    {
+      Class.name = "B";
+      super = "A";
+      fields = [];
+      constructor = {
+        Constructor.name = "B";
+        parameters = [];
+        body = [];
+        super_arguments = [];
+      };
+      methods = [method_b1; method_b2];
+    }
+  ] in
+  let table = create_classtable classes in
+  let class_a = get_class table "A" in
+  let class_b = get_class table "B" in
+  (* 同じクラス内のメソッドの取得 *)
+  assert_equal (get_method table class_a "a1") method_a1;
+  assert_equal (get_method table class_b "b1") method_b1;
+  assert_equal (get_method table class_b "b2") method_b2;
+  (* super まで探しに行く *)
+  assert_equal (get_method table class_b "a1") method_a1;
+  (* 存在しないメソッドの取得 *)
+  assert_raises
+    (Type_error "the method 'c1' is not found in class: B")
+    (fun _ -> get_method table class_b "c1")
+
 let test_check_class_super test_cxt =
   let classes = [
     {
@@ -372,6 +433,7 @@ let suite =
     "test_is_subclass">:: test_is_subclass;
     "test_is_subclasses">:: test_is_subclasses;
     "test_get_field">:: test_get_field;
+    "test_get_method">:: test_get_method;
     "test_check_class_super">:: test_check_class_super;
     "test_check_field">:: test_check_field;
     "test_check_fields">:: test_check_fields]
