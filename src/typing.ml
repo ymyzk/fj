@@ -117,9 +117,10 @@ let rec check_exp table env = function
         let f0 = get_field table k0 n0 in
         let t0 = Field.ty f0 in (* e0.n0 : t0 *)
         let t1 = check_exp table env e1 in (* e1 : t1 *)
-        if not (is_subclass table t0 t1) then
-          raise (Type_error ("'" ^ t1 ^ "' is not a subclass of '" ^ t0 ^ "'"));
-        t0
+        if t0 = t1 then
+          t0
+        else
+          raise (Type_error ("cannot initialize field with different type: '" ^ t0 ^ "' != '" ^ t1 ^ "'"))
       | _, _, _ -> raise (Type_error "not supported")
       end
   | MethodCall(e0, n0, ps0) -> (* e0.m0(ps0) *)
@@ -224,9 +225,14 @@ let check_constructor_parameters_used constructor =
   let parameters =
       List.map fst (Constructor.parameters constructor) in
   let parameters = List.sort compare parameters in
+  (* フィールドの初期化は this.n0 = n1 の形で, n0 = n1 かつ n0, n1 は id *)
   let fields =
     List.map
-      (function FieldSet(_, _, Var(n)) -> n | _ -> raise (Type_error "unknown"))
+      (function
+          FieldSet(_, n0, Var(n1)) when n0 = n1 -> n0
+        | FieldSet(_, _, Var(n)) ->
+            raise (Type_error "invalid field initialization")
+        | _ -> raise (Type_error "unknown"))
       (Constructor.body constructor) in
   let fields = List.sort compare fields in
   let arguments =
