@@ -115,4 +115,5 @@ OCamlLibrary($(LIB), $(FILES))
 clean:
 rm -f \
     $(filter-proper-targets $(glob $(addsuffix .*, $(FILES)))) \
+    parser.conflicts \
     $(PROGRAM) $(PROGRAM).run $(PROGRAM).opt
