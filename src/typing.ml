@@ -146,7 +146,7 @@ let rec check_exp table env = function
   | New(t0, ps0) -> (* new t0(ps0) *)
       let pt0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table t0 in
-      let pt1 = List.map snd (Constructor.parameters (Class.constructor k0)) in
+      let pt1 = Constructor.parameter_types (Class.constructor k0) in
       if is_subclasses table pt1 pt0 then
         Class.ty k0
       else
@@ -231,8 +231,7 @@ let check_constructor_parameters env constructor =
 (* すべてのパラメータがフィールドの初期化かスーパークラスのコンストラクタ呼び出しに利用されているかをチェック *)
 (* Constructor.t -> unit *)
 let check_constructor_parameters_used constructor =
-  let parameters =
-      List.map fst (Constructor.parameters constructor) in
+  let parameters = Constructor.parameter_names constructor in
   let parameters = List.sort compare parameters in
   (* フィールドの初期化は this.n0 = n1 の形で, n0 = n1 かつ n0, n1 は id *)
   let fields =
@@ -279,7 +278,7 @@ let check_constructor_super table env klass =
     (* スーパークラスのコンストラクタに渡される引数の型を取得 *)
     let argument_types = List.map (check_exp table env) arguments in
     (* スーパークラスのコンストラクタの引数の型を取得 *)
-    let parameter_types = List.map snd (Constructor.parameters (Class.constructor super_klass)) in
+    let parameter_types = Constructor.parameter_types (Class.constructor super_klass) in
     if List.length argument_types <> List.length parameter_types then
       (* 引数の数が正しくない *)
       raise (Type_error (

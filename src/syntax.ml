@@ -38,6 +38,9 @@ module Constructor = struct
   let parameters c = c.parameters
   let body c = c.body
   let super_arguments c = c.super_arguments
+
+  let parameter_names c = List.map fst c.parameters
+  let parameter_types c = List.map snd c.parameters
 end
 
 module Method = struct
