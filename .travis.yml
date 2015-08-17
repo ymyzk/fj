@@ -7,5 +7,6 @@ install:
   - opam install menhir omake ounit
 script:
   - omake test
+  - ./examples/run.sh
 env:
   - OCAML_VERSION=4.02 OPAMYES=1
