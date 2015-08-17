@@ -267,9 +267,7 @@ let test_get_method test_cxt =
   (* super まで探しに行く *)
   assert_equal (get_method table class_b "a1") method_a1;
   (* 存在しないメソッドの取得 *)
-  assert_raises
-    (Type_error "the method 'c1' is not found in class: B")
-    (fun _ -> get_method table class_b "c1")
+  assert_raises Not_found (fun _ -> get_method table class_b "c1")
 
 let test_check_class_super test_cxt =
   let classes = [
