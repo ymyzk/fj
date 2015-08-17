@@ -1,7 +1,7 @@
 {
 open Lexing
 
-exception Lexer_error
+exception Lexer_error of string
 
 let reservedWords = [
   (* Keywords *)
@@ -22,22 +22,32 @@ let increment_linenum lexbuf =
 }
 
 rule main = parse
-  [' ' '\009' '\012']+     { main lexbuf }
-| '\n' { increment_linenum lexbuf; main lexbuf }
-| "," { Parser.COMMA }
-| "." { Parser.PERIOD }
-| "=" { Parser.EQ }
-| "{" { Parser.LBRACE }
-| "(" { Parser.LPAREN }
-| "}" { Parser.RBRACE }
-| ")" { Parser.RPAREN }
-| ";" { Parser.SEMICOLON }
-| ['a'-'z' 'A'-'Z']+ {
-  let id = Lexing.lexeme lexbuf in
+    [' ' '\009' '\012']+     { main lexbuf }
+  | '\n' { increment_linenum lexbuf; main lexbuf }
+  | "/*" { comments lexbuf }
+  | "," { Parser.COMMA }
+  | "." { Parser.PERIOD }
+  | "=" { Parser.EQ }
+  | "{" { Parser.LBRACE }
+  | "(" { Parser.LPAREN }
+  | "}" { Parser.RBRACE }
+  | ")" { Parser.RPAREN }
+  | ";" { Parser.SEMICOLON }
+  | ['a'-'z' 'A'-'Z']+ {
+    let id = Lexing.lexeme lexbuf in
     try
       List.assoc id reservedWords
     with
       Not_found -> Parser.ID id
   }
-| eof { Parser.EOF }
-| _ { raise Lexer_error }
+  | eof { Parser.EOF }
+  | _ {
+    let token = Lexing.lexeme lexbuf in
+    let message = Printf.sprintf "unexpected token '%s'" token in
+    raise (Lexer_error message)
+  }
+and comments = parse
+    "*/" { main lexbuf }
+  | "\n" { increment_linenum lexbuf; comments lexbuf }
+  | eof { raise (Lexer_error "unclosed comment") }
+  | _ { comments lexbuf }

@@ -25,9 +25,8 @@ let read_from_file file =
         let message = sprintf "failure: %s" message in
         print_info file message;
         exit 1
-    | Lexer.Lexer_error ->
-        let token = Lexing.lexeme lexbuf in
-        let message = sprintf "lexer error: unexpected token '%s'" token in
+    | Lexer.Lexer_error message ->
+        let message = sprintf "lexer error: %s" message in
         print_error file lexbuf message;
         exit 1
     | Parser.Error -> (* Menhir *)
