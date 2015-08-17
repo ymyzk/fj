@@ -207,7 +207,7 @@ let test_get_field test_cxt =
   assert_equal (get_field table class_b "o1") field_o1;
   (* 存在しないフィールドの取得 *)
   assert_raises
-    (Type_error "the field 'o3' is not found in class: B")
+    (Type_error (Lexing.dummy_pos, "the field 'o3' is not found in class: B"))
     (fun _ -> get_field table class_b "o3")
 
 let test_get_method test_cxt =
@@ -322,10 +322,10 @@ let test_check_class_super test_cxt =
   let table = create_classtable classes in
   begin
     assert_raises
-      (Type_error "cyclic inheritance involving A")
+      (Type_error (Lexing.dummy_pos, "cyclic inheritance involving A"))
       (fun _ -> check_class_super table "A");
     assert_raises
-      (Type_error "cyclic inheritance involving B")
+      (Type_error (Lexing.dummy_pos, "cyclic inheritance involving B"))
       (fun _ -> check_class_super table "B");
     assert_equal (check_class_super table "C") ();
     assert_equal (check_class_super table "D") ()
@@ -367,7 +367,7 @@ let test_check_field test_cxt =
       assert_equal (check_field env class_a f2) ();
       (* b1 のみの環境にフィールド b1 を追加 *)
       assert_raises
-        (Type_error "variable b1 is already defined in class A")
+        (Type_error (Lexing.dummy_pos, "variable b1 is already defined in class A"))
         (fun _ -> (check_field env class_a f1))
     end
   end
@@ -421,7 +421,7 @@ let test_check_fields test_cxt =
     assert_equal (Environment.find "b1" env) type_b;
     assert_equal (Environment.find "b2" env) type_b;
     assert_raises
-      (Type_error "variable b1 is already defined in class C")
+      (Type_error (Lexing.dummy_pos, "variable b1 is already defined in class C"))
       (fun _ -> (check_fields Environment.empty class_c))
   end
 

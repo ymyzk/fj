@@ -7,6 +7,7 @@ module Id = struct
   let make n = { name = n; position = Lexing.dummy_pos; }
 
   let name i = i.name
+  let position i = i.position
 end
 
 type exp =
@@ -32,6 +33,7 @@ module Field = struct
   }
 
   let name f = Id.name f.name
+  let position f = Id.position f.name
   let ty f = f.ty
 end
 
@@ -44,6 +46,7 @@ module Constructor = struct
   }
 
   let name c = Id.name c.name
+  let position c = Id.position c.name
   let parameters c = c.parameters
   let body c = c.body
   let super_arguments c = c.super_arguments
@@ -78,6 +81,7 @@ module Class = struct
   }
 
   let ty c = Type.make (Id.name c.name)
+  let position c = Id.position c.name
   let name c = Id.name c.name
   let super c = c.super
   let fields c = c.fields
