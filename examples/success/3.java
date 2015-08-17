@@ -43,27 +43,27 @@ class A extends Object {
     }
 
     /* T-UCast */
-    A methodG(A a) {
+    A methodH(A a) {
         return (A)a;
     }
 
     /* T-DCast */
-    A methodH(Object o) {
+    A methodI(Object o) {
         return (A)o;
     }
 
     /* T-SCast */
-    A methodI(B b) {
+    A methodJ(B b) {
         return (A)b;
     }
 
     /* T-Method */
-    Object methodJ(Object o) {
+    Object methodK(Object o) {
         return o;
     }
 
     /* T-Method */
-    Object methodK(A a) {
+    Object methodL(A a) {
         /* A <: Object なので A を返すのは OK */
         return a;
     }
@@ -82,7 +82,7 @@ class C extends A {
 
     /* T-Method */
     /* オーバーライド */
-    Object methodK(A a) {
+    Object methodL(A a) {
         return (Object)a;
     }
 }
