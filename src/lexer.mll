@@ -22,8 +22,9 @@ let increment_linenum lexbuf =
 }
 
 rule main = parse
-    [' ' '\009' '\012']+     { main lexbuf }
+    [' ' '\009' '\012']+ { main lexbuf }
   | '\n' { increment_linenum lexbuf; main lexbuf }
+  | "//" { comment lexbuf }
   | "/*" { comments lexbuf }
   | "," { Parser.COMMA }
   | "." { Parser.PERIOD }
@@ -46,6 +47,10 @@ rule main = parse
     let message = Printf.sprintf "unexpected token '%s'" token in
     raise (Lexer_error message)
   }
+and comment = parse
+    "\n" { increment_linenum lexbuf; main lexbuf }
+  | eof { Parser.EOF }
+  | _ { comment lexbuf }
 and comments = parse
     "*/" { main lexbuf }
   | "\n" { increment_linenum lexbuf; comments lexbuf }
