@@ -355,7 +355,15 @@ let check_method table env klass meth =
 (* クラスのすべてのメソッドのチェック *)
 (* Class.t Environment.t -> Type.t Environment.t -> Class.t -> unit *)
 let check_methods table env klass =
-  List.iter (check_method table env klass) (Class.methods klass)
+  let methods = Environment.empty in
+  ignore (List.fold_left begin fun methods meth ->
+    let name = Method.name meth in
+    if Environment.mem name methods then
+      raise (Type_error (sprintf "duplicate method '%s' in class '%s'" (Method.name meth) (Class.name klass)));
+    check_method table env klass meth;
+    Environment.add name meth methods
+  end methods (Class.methods klass));
+  ()
 
 (* クラスのチェック *)
 (* Class.t Environment.t -> Type.t Environment.t -> Class.t -> unit *)
