@@ -1,3 +1,4 @@
+open Printf
 open Syntax
 
 module Environment = Map.Make (
@@ -94,10 +95,19 @@ let get_method table klass name =
       List.find (fun m -> Method.name m = name) (Class.methods klass')
     with Not_found ->
       if Class.ty klass' = Class.ty base_class then
-        raise (Type_error ("the method '" ^ name ^ "' is not found in class: " ^ (Class.name klass)));
+        raise Not_found;
       let super_klass = super_of table klass' in
       get_method table super_klass name in
   get_method table klass name
+
+(* クラスからメソッドを取得する処理, 見つからない場合は Type_error とする *)
+(* Class.t Environment.t -> Class.t -> id -> Method.t *)
+let get_method_with_type_error table klass name =
+  try
+    get_method table klass name
+  with Not_found ->
+    raise (Type_error (
+      sprintf "the method '%s' is not found in class: %s" name (Class.name klass)))
 
 (* 式の型を求める処理 *)
 (* Class.t Environment.t -> Type.t Environment.t -> exp -> Type.t *)
@@ -126,13 +136,12 @@ let rec check_exp table env = function
   | MethodCall(e0, n0, ps0) -> (* e0.m0(ps0) *)
       let ts0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table (Type.name (check_exp table env e0)) in
-      let m0 = get_method table k0 n0 in
+      let m0 = get_method_with_type_error table k0 n0 in
       let ts1 = List.map snd (Method.parameters m0) in
       if is_subclasses table ts1 ts0 then
         Method.return_type m0
       else
-        raise (Type_error (
-          "cannot invoke a method " ^ n0))
+        raise (Type_error ("cannot invoke a method " ^ n0))
   | New(t0, ps0) -> (* new t0(ps0) *)
       let pt0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table t0 in
@@ -154,7 +163,7 @@ let rec check_exp table env = function
         (* stupid cast *)
         begin
           (* エラーメッセージを出力するが処理は続ける *)
-          Printf.eprintf
+          eprintf
             "stupid cast from class '%s' to class '%s'\n"
             (Type.name t1) (Type.name t0);
           t0
@@ -302,9 +311,35 @@ let rec check_constructor table env klass =
   check_constructor_parameters_used constructor;
   ()
 
+(* メソッドのオーバーライドのチェック *)
+(* Class.t Environment.t -> Class.t -> Method.t -> unit *)
+let check_method_override table klass meth =
+  (* スーパークラスに同じ名前のメソッドがある場合,
+   * 引数と戻り値の型が一致する場合のみオーバーライドとして受理する *)
+  let super_klass = super_of table klass in
+  if Class.ty super_klass = Class.ty base_class then
+    (* base_class まで調べれば終了 *)
+    ();
+  try
+    let super_method = get_method table super_klass (Method.name meth) in
+    if (Method.return_type meth) <> (Method.return_type super_method) then
+      (* 戻り値の型が違うのでエラー *)
+      raise (Type_error (sprintf "cannot overload method: %s" (Method.name meth)));
+    let parameter_types = List.map snd (Method.parameters meth) in
+    let super_parameter_types = List.map snd (Method.parameters super_method) in
+    if parameter_types <> super_parameter_types then
+      (* 引数の型が違うのでエラー *)
+      raise (Type_error (sprintf "cannot overload method: %s" (Method.name meth)));
+    (* メソッド名が同じで, 引数の型が一致し, 戻り値の型が一致している場合
+     * これはオーバーライドなので受理 *)
+    ()
+  with Not_found ->
+    (* スーパークラスにメソッドが見つからないので終了 *)
+    ()
+
 (* メソッドのチェック *)
-(* Class.t Environment.t Type.t Environment.t -> Method.t -> unit *)
-let check_method table env meth =
+(* Class.t Environment.t -> Type.t Environment.t -> Class.t -> Method.t -> unit *)
+let check_method table env klass meth =
   (* パラメータを環境に追加 *)
   let env' =
     List.fold_left
@@ -313,15 +348,14 @@ let check_method table env meth =
   (* メソッドの内部の型をチェック *)
   let ty = check_exp table env' (Method.body meth) in
   (* 戻り値と型が合うかどうか *)
-  if is_subclass table (Method.return_type meth) ty then
-    ()
-  else
-    raise (Type_error ("return type error"))
+  if not (is_subclass table (Method.return_type meth) ty) then
+    raise (Type_error ("return type error"));
+  check_method_override table klass meth
 
 (* クラスのすべてのメソッドのチェック *)
 (* Class.t Environment.t -> Type.t Environment.t -> Class.t -> unit *)
 let check_methods table env klass =
-  List.iter (check_method table env) (Class.methods klass)
+  List.iter (check_method table env klass) (Class.methods klass)
 
 (* クラスのチェック *)
 (* Class.t Environment.t -> Type.t Environment.t -> Class.t -> unit *)

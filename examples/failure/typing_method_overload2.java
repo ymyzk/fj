@@ -13,8 +13,8 @@ class B extends A {
         super();
     }
 
-    /* 戻り値の型が違う */
-    A method(Object o) {
-        return (A)o;
+    /* 引数の型が違う */
+    Object method(A a) {
+        return (Object)a;
     }
 }

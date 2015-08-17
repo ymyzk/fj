@@ -8,8 +8,15 @@ class A extends Object {
     }
 }
 
+/* A と C の間に B を挟んでもオーバーライドのチェックができるか */
 class B extends A {
     B() {
+        super();
+    }
+}
+
+class C extends B {
+    C() {
         super();
     }
 
