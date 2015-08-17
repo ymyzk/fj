@@ -14,7 +14,11 @@
 * `./src/main <source.java>`
 
 ## Test
+### Unit tests
 * `omake test`
+
+### Examples
+* `./examples/run.sh`
 
 ## References
 * [Featherweight Java: A Minimal Core Calculus for Java and GJ](http://www.cis.upenn.edu/~bcpierce/papers/fj-toplas.pdf)
