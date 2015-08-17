@@ -138,7 +138,7 @@ let rec check_exp table env = function
       let ts0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table (Type.name (check_exp table env e0)) in
       let m0 = get_method_with_type_error table k0 n0 in
-      let ts1 = List.map snd (Method.parameters m0) in
+      let ts1 = Method.parameter_types m0 in
       if is_subclasses table ts1 ts0 then
         Method.return_type m0
       else
@@ -325,8 +325,8 @@ let check_method_override table klass meth =
     if (Method.return_type meth) <> (Method.return_type super_method) then
       (* 戻り値の型が違うのでエラー *)
       raise (Type_error (sprintf "cannot overload method: %s" (Method.name meth)));
-    let parameter_types = List.map snd (Method.parameters meth) in
-    let super_parameter_types = List.map snd (Method.parameters super_method) in
+    let parameter_types = Method.parameter_types meth in
+    let super_parameter_types = Method.parameter_types super_method in
     if parameter_types <> super_parameter_types then
       (* 引数の型が違うのでエラー *)
       raise (Type_error (sprintf "cannot overload method: %s" (Method.name meth)));

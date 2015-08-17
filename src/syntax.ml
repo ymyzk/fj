@@ -12,6 +12,7 @@ module Type = struct
   type t = id
 
   let make (n : id) : t = n
+
   let name (t : t) : id = t
 end
 
@@ -51,6 +52,8 @@ module Method = struct
   let parameters m = m.parameters
   let body m = m.body
   let return_type m = m.return_type
+
+  let parameter_types m = List.map snd m.parameters
 end
 
 module Class = struct
