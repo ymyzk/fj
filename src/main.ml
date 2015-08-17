@@ -35,6 +35,7 @@ let read_from_file file =
         print_error file lexbuf message;
         exit 1
     | Type_error message ->
+        let message = sprintf "type error: %s" message in
         print_info file message;
         exit 1
     | _ ->
