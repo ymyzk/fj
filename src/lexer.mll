@@ -39,7 +39,8 @@ rule main = parse
     try
       List.assoc id reservedWords
     with
-      Not_found -> Parser.ID id
+      Not_found ->
+        Parser.ID { Syntax.Id.name = id; position = lexbuf.Lexing.lex_curr_p }
   }
   | eof { Parser.EOF }
   | _ {

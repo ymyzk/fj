@@ -3,7 +3,7 @@ open Syntax
 
 module Environment = Map.Make (
   struct
-    type t = id
+    type t = Type.t
     let compare = compare
   end
 )
@@ -12,11 +12,11 @@ exception Type_error of string
 
 let base_class_name = "Object"
 let base_class = {
-  Class.name = base_class_name;
+  Class.name = Id.make base_class_name;
   super = "???";
   fields = [];
   constructor = {
-    Constructor.name = base_class_name;
+    Constructor.name = Id.make base_class_name;
     parameters = [];
     body = [];
     super_arguments = [];
@@ -113,17 +113,18 @@ let get_method_with_type_error table klass name =
 (* 式の型を求める処理 *)
 (* Class.t Environment.t -> Type.t Environment.t -> exp -> Type.t *)
 let rec check_exp table env = function
-  | Var(n0) when Environment.mem n0 env ->
+  | Var({ Id.name = n0; position = _; }) when Environment.mem n0 env ->
       Environment.find n0 env
   | Var(n0) ->
-      raise (Type_error ("'" ^ n0 ^ "' is not found in the environment"))
-  | FieldGet(e0, n0) -> (* e0.n0 *)
+      (* TODO: line  *)
+      raise (Type_error (sprintf "'%s' is not found in the environment" (Id.name n0)))
+  | FieldGet(e0, { Id.name = n0; position = _; }) -> (* e0.n0 *)
       let k0 = get_class table (check_exp table env e0) in
       let f0 = get_field table k0 n0 in
       Field.ty f0
-  | FieldSet(e0, n0, e1) -> (* e0.n0 = e1 *)
+  | FieldSet(e0, { Id.name = n0; position = _; }, e1) -> (* e0.n0 = e1 *)
       begin match e0, n0, e1 with
-      | (Var "this"), _, (Var _) ->
+      | (Var { Id.name = "this"; position = _; }), _, (Var _) ->
         let k0 = get_class table (check_exp table env e0) in (* e0 (this) : k0 *)
         let f0 = get_field table k0 n0 in
         let t0 = Field.ty f0 in (* e0.n0 : t0 *)
@@ -134,7 +135,7 @@ let rec check_exp table env = function
         t0
       | _, _, _ -> raise (Type_error "not supported")
       end
-  | MethodCall(e0, n0, ps0) -> (* e0.m0(ps0) *)
+  | MethodCall(e0, { Id.name = n0; position = _; }, ps0) -> (* e0.m0(ps0) *)
       let ts0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table (Type.name (check_exp table env e0)) in
       let m0 = get_method_with_type_error table k0 n0 in
@@ -143,7 +144,7 @@ let rec check_exp table env = function
         Method.return_type m0
       else
         raise (Type_error ("cannot invoke a method " ^ n0))
-  | New(t0, ps0) -> (* new t0(ps0) *)
+  | New({ Id.name = t0; position = _; }, ps0) -> (* new t0(ps0) *)
       let pt0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table t0 in
       let pt1 = Constructor.parameter_types (Class.constructor k0) in
@@ -152,7 +153,7 @@ let rec check_exp table env = function
       else
         raise (Type_error (
           "cannot invoke a class constructor " ^ (Class.name k0)))
-  | Cast(t0, e0) -> (* (t0)e0 *)
+  | Cast({ Id.name = t0; position = _; }, e0) -> (* (t0)e0 *)
       let t1 = check_exp table env e0 in
       if is_subclass table t0 t1 then
         (* up cast *)
@@ -210,7 +211,9 @@ let check_fields env klass =
 let check_uninitialized_fields klass =
   let constructor_fields =
     List.map
-      (function FieldSet(_, n, _) -> n | _ -> raise (Type_error "unknown"))
+      (function
+          FieldSet(_, { Id.name = n; position = _; }, _) -> n
+        | _ -> raise (Type_error "unknown"))
       (Constructor.body (Class.constructor klass)) in
   let constructor_fields = List.sort compare constructor_fields in
   let class_fields = List.map Field.name (Class.fields klass) in
@@ -226,7 +229,7 @@ let check_uninitialized_fields klass =
 let check_constructor_parameters env constructor =
   let parameters = Constructor.parameters constructor in
   List.fold_left
-    (fun e (k, n) -> Environment.add k n e) env parameters
+    (fun e (k, n) -> Environment.add (Id.name k) n e) env parameters
 
 (* すべてのパラメータがフィールドの初期化かスーパークラスのコンストラクタ呼び出しに利用されているかをチェック *)
 (* Constructor.t -> unit *)
@@ -237,7 +240,7 @@ let check_constructor_parameters_used constructor =
   let fields =
     List.map
       (function
-          FieldSet(_, n0, Var(n1)) when n0 = n1 -> n0
+          FieldSet(_, { Id.name = n0; position = _; }, Var({ Id.name = n1; position = _;})) when n0 = n1 -> n0
         | FieldSet(_, _, Var(n)) ->
             raise (Type_error "invalid field initialization")
         | _ -> raise (Type_error "unknown"))
@@ -245,7 +248,9 @@ let check_constructor_parameters_used constructor =
   let fields = List.sort compare fields in
   let arguments =
     List.map
-      (function Var(n) -> n | _ -> raise (Type_error "unknown"))
+      (function
+          Var({ Id.name = n; position = _; }) -> n
+        | _ -> raise (Type_error "unknown"))
       (Constructor.super_arguments constructor) in
   let fields_and_arguments = List.sort compare (fields @ arguments) in
   if parameters <> fields_and_arguments then
@@ -342,7 +347,7 @@ let check_method table env klass meth =
   (* パラメータを環境に追加 *)
   let env' =
     List.fold_left
-      (fun e (n, t) -> Environment.add n t e)
+      (fun e (n, t) -> Environment.add (Id.name n) t e)
       env (Method.parameters meth) in
   (* メソッドの内部の型をチェック *)
   let ty = check_exp table env' (Method.body meth) in
