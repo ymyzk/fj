@@ -95,6 +95,7 @@ let get_method table klass name =
       List.find (fun m -> Method.name m = name) (Class.methods klass')
     with Not_found ->
       if Class.ty klass' = Class.ty base_class then
+        (* Object まで探して見つからなかった場合は Not_found *)
         raise Not_found;
       let super_klass = super_of table klass' in
       get_method table super_klass name in
@@ -127,10 +128,10 @@ let rec check_exp table env = function
         let f0 = get_field table k0 n0 in
         let t0 = Field.ty f0 in (* e0.n0 : t0 *)
         let t1 = check_exp table env e1 in (* e1 : t1 *)
-        if t0 = t1 then
-          t0
-        else
-          raise (Type_error ("cannot initialize field with different type: '" ^ t0 ^ "' != '" ^ t1 ^ "'"))
+        if t0 <> t1 then
+          (* フィールドの初期化は型が一致していなければならない *)
+          raise (Type_error ("cannot initialize field with different type: '" ^ t0 ^ "' != '" ^ t1 ^ "'"));
+        t0
       | _, _, _ -> raise (Type_error "not supported")
       end
   | MethodCall(e0, n0, ps0) -> (* e0.m0(ps0) *)
@@ -217,9 +218,8 @@ let check_uninitialized_fields klass =
   (* コンストラクタ内で初期化されているフィールドの名前のリストと
    * クラスで定義されているフィールドの名前のリストを比較 *)
   if constructor_fields <> class_fields then
-    raise (Type_error ("uninialized fields in class " ^ (Class.name klass)))
-  else
-    ()
+    raise (Type_error ("uninialized fields in class " ^ (Class.name klass)));
+  ()
 
 (* コンストラクタのパラメーターを左から順に環境に追加 *)
 (* Type.t Environment.t -> Constructor.t -> Type.t Environment.t *)
