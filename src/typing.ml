@@ -38,7 +38,7 @@ let create_classtable classes =
   end table classes
 
 (* クラステーブルからクラスを取得する *)
-(* Class.t Environment.t -> Type.t -> Class.t *)
+(* ?position:Lexing.position -> Class.t Environment.t -> Type.t -> Class.t *)
 let get_class ?(position=Lexing.dummy_pos) table name =
   try
     Environment.find name table
@@ -75,15 +75,15 @@ let rec is_subclasses table l0 l1 =
       (is_subclass table k0 k1) && (is_subclasses table ks0 ks1)
 
 (* クラスからフィールドを取得する処理 *)
-(* Class.t Environment.t -> Class.t -> Type.t -> Field.t *)
-let get_field table klass name =
+(* ?position:Lexing.position -> Class.t Environment.t -> Class.t -> Type.t -> Field.t *)
+let get_field ?(position=Lexing.dummy_pos) table klass name =
   let rec get_field table klass' name =
     try
       List.find (fun f -> Field.name f = name) (Class.fields klass')
     with Not_found ->
       if Class.ty klass' = Class.ty base_class then
         raise (Type_error (
-          Lexing.dummy_pos,
+          position,
           sprintf "the field '%s' is not found in class: %s" name (Class.name klass)));
       let super_klass = super_of table klass' in
       get_field table super_klass name in
@@ -105,12 +105,12 @@ let get_method table klass name =
 
 (* クラスからメソッドを取得する処理, 見つからない場合は Type_error とする *)
 (* Class.t Environment.t -> Class.t -> id -> Method.t *)
-let get_method_with_type_error table klass name =
+let get_method_with_type_error table klass name position =
   try
     get_method table klass name
   with Not_found ->
     raise (Type_error (
-      Lexing.dummy_pos,
+      position,
       sprintf "the method '%s' is not found in class: %s" name (Class.name klass)))
 
 (* 式の型を求める処理 *)
@@ -122,14 +122,14 @@ let rec check_exp table env = function
       raise (Type_error (
         Id.position n0,
         sprintf "'%s' is not found in the environment" (Id.name n0)))
-  | FieldGet(e0, { Id.name = n0; position = _; }) -> (* e0.n0 *)
+  | FieldGet(e0, { Id.name = n0; position = p0; }) -> (* e0.n0 *)
       let k0 = get_class table (check_exp table env e0) in
-      let f0 = get_field table k0 n0 in
+      let f0 = get_field table k0 n0 ~position:p0 in
       Field.ty f0
   | MethodCall(e0, { Id.name = n0; position = p0; }, ps0) -> (* e0.m0(ps0) *)
       let ts0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table (Type.name (check_exp table env e0)) in
-      let m0 = get_method_with_type_error table k0 n0 in
+      let m0 = get_method_with_type_error table k0 n0 p0 in
       let ts1 = Method.parameter_types m0 in
       if is_subclasses table ts1 ts0 then
         Method.return_type m0
@@ -217,7 +217,9 @@ let check_uninitialized_fields klass =
   (* コンストラクタ内で初期化されているフィールドの名前のリストと
    * クラスで定義されているフィールドの名前のリストを比較 *)
   if constructor_fields <> class_fields then
-    raise (Type_error (Lexing.dummy_pos, "unintialized fields in class " ^ (Class.name klass)));
+    raise (Type_error (
+      Class.position klass,
+      "unintialized fields in class " ^ (Class.name klass)));
   ()
 
 (* コンストラクタのパラメーターを左から順に環境に追加 *)
@@ -242,7 +244,11 @@ let check_constructor_parameters_used constructor =
     List.map
       (function
           Var({ Id.name = n; position = _; }) -> n
-        | _ -> raise (Type_error (Lexing.dummy_pos, "unknown")))
+        | _ ->
+            raise (Type_error (
+              Constructor.position constructor,
+              "unsupported expression in super class constructor call: "
+              ^ (Constructor.name constructor))))
       (Constructor.super_arguments constructor) in
   let fields_and_arguments = List.sort compare (fields @ arguments) in
   if parameters <> fields_and_arguments then
@@ -307,7 +313,7 @@ let check_constructor_super table env klass =
     else
       (* スーパークラスのコンストラクタと型が合わない *)
       raise (Type_error (
-        Lexing.dummy_pos,
+        Class.position klass,
         "cannot invoke a super class constructor in the constructor of class "
         ^ (Class.name super_klass)))
 
