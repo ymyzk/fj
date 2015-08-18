@@ -332,7 +332,7 @@ let test_check_class_super test_cxt =
   end
 
 let test_check_fields test_cxt =
-  let type_b = Type.make "B" in
+  let type_b = Type.make "Object" in
   let class_a = {
     Class.name = Id.make "A";
     super = "Object";

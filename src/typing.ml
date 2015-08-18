@@ -48,7 +48,7 @@ let get_class ?(position=Lexing.dummy_pos) table name =
 (* クラステーブルからスーパークラスを取得する *)
 (* Class.t Environment.t -> Class.t -> Class.t *)
 let super_of table klass =
-  get_class table (Type.name (Class.super klass))
+  get_class table (Class.super klass)
 
 (* k1 は k0 のサブクラスかどうか *)
 (* Class.t Environment.t -> Type.t -> Type.t -> bool *)
@@ -217,7 +217,7 @@ let check_uninitialized_fields klass =
   (* コンストラクタ内で初期化されているフィールドの名前のリストと
    * クラスで定義されているフィールドの名前のリストを比較 *)
   if constructor_fields <> class_fields then
-    raise (Type_error (Lexing.dummy_pos, "uninialized fields in class " ^ (Class.name klass)));
+    raise (Type_error (Lexing.dummy_pos, "unintialized fields in class " ^ (Class.name klass)));
   ()
 
 (* コンストラクタのパラメーターを左から順に環境に追加 *)
