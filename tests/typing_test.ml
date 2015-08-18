@@ -6,11 +6,11 @@ open Typing
 let test_create_classtable test_cxt =
   let classes = [
     {
-      Class.name = "A";
+      Class.name = Id.make "A";
       super = "Object";
       fields = [];
       constructor = {
-        Constructor.name = "A";
+        Constructor.name = Id.make "A";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -18,11 +18,11 @@ let test_create_classtable test_cxt =
       methods = [];
     };
     {
-      Class.name = "B";
+      Class.name = Id.make "B";
       super = "A";
       fields = [];
       constructor = {
-        Constructor.name = "B";
+        Constructor.name = Id.make "B";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -39,11 +39,11 @@ let test_create_classtable test_cxt =
 let test_is_subclass test_cxt =
   let classes = [
     {
-      Class.name = "A";
+      Class.name = Id.make "A";
       super = "Object";
       fields = [];
       constructor = {
-        Constructor.name = "A";
+        Constructor.name = Id.make "A";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -51,11 +51,11 @@ let test_is_subclass test_cxt =
       methods = [];
     };
     {
-      Class.name = "B";
+      Class.name = Id.make "B";
       super = "A";
       fields = [];
       constructor = {
-        Constructor.name = "B";
+        Constructor.name = Id.make "B";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -63,11 +63,11 @@ let test_is_subclass test_cxt =
       methods = [];
     };
     {
-      Class.name = "C";
+      Class.name = Id.make "C";
       super = "B";
       fields = [];
       constructor = {
-        Constructor.name = "C";
+        Constructor.name = Id.make "C";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -75,11 +75,11 @@ let test_is_subclass test_cxt =
       methods = [];
     };
     {
-      Class.name = "D";
+      Class.name = Id.make "D";
       super = "A";
       fields = [];
       constructor = {
-        Constructor.name = "D";
+        Constructor.name = Id.make "D";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -122,11 +122,11 @@ let test_is_subclass test_cxt =
 let test_is_subclasses test_cxt =
   let classes = [
     {
-      Class.name = "A";
+      Class.name = Id.make "A";
       super = "Object";
       fields = [];
       constructor = {
-        Constructor.name = "A";
+        Constructor.name = Id.make "A";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -134,11 +134,11 @@ let test_is_subclasses test_cxt =
       methods = [];
     };
     {
-      Class.name = "B";
+      Class.name = Id.make "B";
       super = "A";
       fields = [];
       constructor = {
-        Constructor.name = "B";
+        Constructor.name = Id.make "B";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -159,24 +159,24 @@ let test_is_subclasses test_cxt =
 
 let test_get_field test_cxt =
   let field_o1 = {
-    Field.name = "o1";
+    Field.name = Id.make "o1";
     ty = Type.make "Object";
   } in
   let field_o2 = {
-    Field.name = "o2";
+    Field.name = Id.make "o2";
     ty = Type.make "Object";
   } in
   let field_a1 = {
-    Field.name = "a1";
+    Field.name = Id.make "a1";
     ty = Type.make "A";
   } in
   let classes = [
     {
-      Class.name = "A";
+      Class.name = Id.make "A";
       super = "Object";
       fields = [field_o1];
       constructor = {
-        Constructor.name = "A";
+        Constructor.name = Id.make "A";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -184,11 +184,11 @@ let test_get_field test_cxt =
       methods = [];
     };
     {
-      Class.name = "B";
+      Class.name = Id.make "B";
       super = "A";
       fields = [field_o2; field_a1];
       constructor = {
-        Constructor.name = "B";
+        Constructor.name = Id.make "B";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -207,37 +207,37 @@ let test_get_field test_cxt =
   assert_equal (get_field table class_b "o1") field_o1;
   (* 存在しないフィールドの取得 *)
   assert_raises
-    (Type_error "the field 'o3' is not found in class: B")
+    (Type_error (Lexing.dummy_pos, "the field 'o3' is not found in class: B"))
     (fun _ -> get_field table class_b "o3")
 
 let test_get_method test_cxt =
   let type_o = Type.make "Object" in
   let type_a = Type.make "A" in
   let method_a1 = {
-    Method.name = "a1";
+    Method.name = Id.make "a1";
     parameters = [];
-    body = New("Object", []);
+    body = New(Id.make "Object", []);
     return_type = type_o;
   } in
   let method_b1 = {
-    Method.name = "b1";
+    Method.name = Id.make "b1";
     parameters = [];
-    body = New("Object", []);
+    body = New(Id.make "Object", []);
     return_type = type_o;
   } in
   let method_b2 = {
-    Method.name = "b2";
+    Method.name = Id.make "b2";
     parameters = [];
-    body = New("A", []);
+    body = New(Id.make "A", []);
     return_type = type_a;
   } in
   let classes = [
     {
-      Class.name = "A";
+      Class.name = Id.make "A";
       super = "Object";
       fields = [];
       constructor = {
-        Constructor.name = "A";
+        Constructor.name = Id.make "A";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -245,11 +245,11 @@ let test_get_method test_cxt =
       methods = [method_a1];
     };
     {
-      Class.name = "B";
+      Class.name = Id.make "B";
       super = "A";
       fields = [];
       constructor = {
-        Constructor.name = "B";
+        Constructor.name = Id.make "B";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -272,11 +272,11 @@ let test_get_method test_cxt =
 let test_check_class_super test_cxt =
   let classes = [
     {
-      Class.name = "A";
+      Class.name = Id.make "A";
       super = "A";
       fields = [];
       constructor = {
-        Constructor.name = "A";
+        Constructor.name = Id.make "A";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -284,11 +284,11 @@ let test_check_class_super test_cxt =
       methods = [];
     };
     {
-      Class.name = "B";
+      Class.name = Id.make "B";
       super = "A";
       fields = [];
       constructor = {
-        Constructor.name = "B";
+        Constructor.name = Id.make "B";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -296,11 +296,11 @@ let test_check_class_super test_cxt =
       methods = [];
     };
     {
-      Class.name = "C";
+      Class.name = Id.make "C";
       super = "Object";
       fields = [];
       constructor = {
-        Constructor.name = "C";
+        Constructor.name = Id.make "C";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -308,11 +308,11 @@ let test_check_class_super test_cxt =
       methods = [];
     };
     {
-      Class.name = "D";
+      Class.name = Id.make "D";
       super = "C";
       fields = [];
       constructor = {
-        Constructor.name = "D";
+        Constructor.name = Id.make "D";
         parameters = [];
         body = [];
         super_arguments = [];
@@ -322,10 +322,10 @@ let test_check_class_super test_cxt =
   let table = create_classtable classes in
   begin
     assert_raises
-      (Type_error "cyclic inheritance involving A")
+      (Type_error (Lexing.dummy_pos, "cyclic inheritance involving A"))
       (fun _ -> check_class_super table "A");
     assert_raises
-      (Type_error "cyclic inheritance involving B")
+      (Type_error (Lexing.dummy_pos, "cyclic inheritance involving B"))
       (fun _ -> check_class_super table "B");
     assert_equal (check_class_super table "C") ();
     assert_equal (check_class_super table "D") ()
@@ -334,20 +334,20 @@ let test_check_class_super test_cxt =
 let test_check_field test_cxt =
   let type_b = Type.make "B" in
   let class_a = {
-    Class.name = "A";
+    Class.name = Id.make "A";
     super = "Object";
     fields = [
       {
-        Field.name = "b1";
+        Field.name = Id.make "b1";
         ty = type_b
       };
       {
-        Field.name = "b2";
+        Field.name = Id.make "b2";
         ty = type_b
       }
     ];
     constructor = {
-      Constructor.name = "A";
+      Constructor.name = Id.make "A";
       parameters = [];
       body = [];
       super_arguments = [];
@@ -367,7 +367,7 @@ let test_check_field test_cxt =
       assert_equal (check_field env class_a f2) ();
       (* b1 のみの環境にフィールド b1 を追加 *)
       assert_raises
-        (Type_error "variable b1 is already defined in class A")
+        (Type_error (Lexing.dummy_pos, "variable b1 is already defined in class A"))
         (fun _ -> (check_field env class_a f1))
     end
   end
@@ -375,20 +375,20 @@ let test_check_field test_cxt =
 let test_check_fields test_cxt =
   let type_b = Type.make "B" in
   let class_a = {
-    Class.name = "A";
+    Class.name = Id.make "A";
     super = "Object";
     fields = [
       {
-        Field.name = "b1";
+        Field.name = Id.make "b1";
         ty = type_b
       };
       {
-        Field.name = "b2";
+        Field.name = Id.make "b2";
         ty = type_b
       }
     ];
     constructor = {
-      Constructor.name = "A";
+      Constructor.name = Id.make "A";
       parameters = [];
       body = [];
       super_arguments = [];
@@ -396,20 +396,20 @@ let test_check_fields test_cxt =
     methods = [];
   } in
   let class_c = {
-    Class.name = "C";
+    Class.name = Id.make "C";
     super = "Object";
     fields = [
       {
-        Field.name = "b1";
+        Field.name = Id.make "b1";
         ty = type_b
       };
       {
-        Field.name = "b1";
+        Field.name = Id.make "b1";
         ty = type_b
       }
     ];
     constructor = {
-      Constructor.name = "C";
+      Constructor.name = Id.make "C";
       parameters = [];
       body = [];
       super_arguments = [];
@@ -421,7 +421,7 @@ let test_check_fields test_cxt =
     assert_equal (Environment.find "b1" env) type_b;
     assert_equal (Environment.find "b2" env) type_b;
     assert_raises
-      (Type_error "variable b1 is already defined in class C")
+      (Type_error (Lexing.dummy_pos, "variable b1 is already defined in class C"))
       (fun _ -> (check_fields Environment.empty class_c))
   end
 

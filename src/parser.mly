@@ -2,7 +2,7 @@
 open Syntax
 %}
 
-%token <Syntax.id> ID
+%token <Syntax.Id.t> ID
 
 %token EOF
 %token COMMA PERIOD LBRACE LPAREN RBRACE RPAREN EQ SEMICOLON
@@ -24,14 +24,22 @@ class_definition :
         field_list
         constructor
         method_definition_list
-    RBRACE { { Class.name = $2; super = $4; fields = $6; constructor = $7; methods = $8; } }
+    RBRACE {
+      {
+        Class.name = $2;
+        super = Type.make (Id.name $4);
+        fields = $6;
+        constructor = $7;
+        methods = $8;
+      }
+    }
 
 field_list :
     { [] }
   | field_list field { $1 @ [$2] }
 
 field :
-    ID ID SEMICOLON { { Field.name = $2; ty = $1; } }
+    ID ID SEMICOLON { { Field.name = $2; ty = Type.make (Id.name $1); } }
 
 constructor :
     ID LPAREN parameter_list_opt RPAREN LBRACE
@@ -48,7 +56,7 @@ parameter_list :
   | parameter COMMA parameter_list { $1 :: $3 }
 
 parameter :
-    ID ID { ($2, $1) }
+    ID ID { ($2, Type.make (Id.name $1)) }
 
 argument_list_opt :
     { [] }
@@ -66,7 +74,7 @@ field_initializer_list :
   | field_initializer SEMICOLON field_initializer_list { $1 :: $3 }
 
 field_initializer :
-    THIS PERIOD ID EQ ID { FieldSet (Var "this", $3, Var $5) }
+    THIS PERIOD ID EQ ID { ($3, Var $5) }
 
 method_definition_list :
     { [] }
@@ -75,11 +83,18 @@ method_definition_list :
 method_definition :
     ID ID LPAREN parameter_list_opt RPAREN LBRACE
         RETURN expression SEMICOLON
-    RBRACE { { Method.name = $2; parameters = $4; body = $8; return_type = $1; } }
+    RBRACE {
+      {
+        Method.name = $2;
+        parameters = $4;
+        body = $8;
+        return_type = Type.make (Id.name $1);
+      }
+    }
 
 expression :
     ID { Var $1 }
-  | THIS { Var "this" }
+  | THIS { Var (Id.make "this") }
   | expression PERIOD ID { FieldGet ($1, $3) }
   | expression PERIOD ID LPAREN argument_list_opt RPAREN { MethodCall ($1, $3, $5) }
   | NEW ID LPAREN argument_list_opt RPAREN { New ($2, $4) }
