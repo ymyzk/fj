@@ -64,6 +64,7 @@ module Method = struct
   }
 
   let name m = Id.name m.name
+  let position m = Id.position m.name
   let parameters m = m.parameters
   let body m = m.body
   let return_type m = m.return_type

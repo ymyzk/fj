@@ -340,12 +340,16 @@ let check_method_override table klass meth =
     let super_method = get_method table super_klass (Method.name meth) in
     if (Method.return_type meth) <> (Method.return_type super_method) then
       (* 戻り値の型が違うのでエラー *)
-      raise (Type_error (Lexing.dummy_pos, sprintf "cannot overload method: %s" (Method.name meth)));
+      raise (Type_error (
+        Method.position meth,
+        sprintf "cannot overload method: %s" (Method.name meth)));
     let parameter_types = Method.parameter_types meth in
     let super_parameter_types = Method.parameter_types super_method in
     if parameter_types <> super_parameter_types then
       (* 引数の型が違うのでエラー *)
-      raise (Type_error (Lexing.dummy_pos, sprintf "cannot overload method: %s" (Method.name meth)));
+      raise (Type_error (
+        Method.position meth,
+        sprintf "cannot overload method: %s" (Method.name meth)));
     (* メソッド名が同じで, 引数の型が一致し, 戻り値の型が一致している場合
      * これはオーバーライドなので受理 *)
     ()
@@ -375,7 +379,9 @@ let check_methods table env klass =
   ignore (List.fold_left begin fun methods meth ->
     let name = Method.name meth in
     if Environment.mem name methods then
-      raise (Type_error (Lexing.dummy_pos, sprintf "duplicate method '%s' in class '%s'" (Method.name meth) (Class.name klass)));
+      raise (Type_error (
+        Method.position meth,
+        sprintf "duplicate method '%s' in class '%s'" (Method.name meth) (Class.name klass)));
     check_method table env klass meth;
     Environment.add name meth methods
   end methods (Class.methods klass));
