@@ -244,7 +244,7 @@ let check_constructor_parameters_used constructor =
   if parameters <> fields_and_arguments then
     (* コンストラクタの引数で利用されていないものがある *)
     raise (Type_error (
-      Lexing.dummy_pos,
+      Constructor.position constructor,
       "incorrect parameter use in the constructor of class " ^ (Constructor.name constructor)))
   else
     ()
@@ -294,7 +294,7 @@ let check_constructor_super table env klass =
     if List.length argument_types <> List.length parameter_types then
       (* 引数の数が正しくない *)
       raise (Type_error (
-        Lexing.dummy_pos,
+        Class.position klass,
         "super: argument lists differ in length for class "
         ^ (Class.name super_klass)))
     else if is_subclasses table parameter_types argument_types then
@@ -366,7 +366,9 @@ let check_method table env klass meth =
   let ty = check_exp table env' (Method.body meth) in
   (* 戻り値と型が合うかどうか *)
   if not (is_subclass table (Method.return_type meth) ty) then
-    raise (Type_error (Lexing.dummy_pos, "return type error"));
+    raise (Type_error (
+      Method.position meth,
+      "invalid method return type: " ^ (Method.name meth)));
   check_method_override table klass meth
 
 (* クラスのすべてのメソッドのチェック *)
