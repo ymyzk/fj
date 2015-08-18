@@ -163,21 +163,27 @@ let rec check_exp table env = function
           t0
         end
 
-(* クラスの部分型関係のチェック, 不完全? 不要? *)
-(* Class.t Environment.t -> id -> unit *)
+(* クラスの部分型関係のチェック *)
+(* Class.t Environment.t -> Type.t -> unit *)
 let check_class_super table name =
-  let rec check_class_super table name1 name2 =
-    if name1 = base_class_name || name2 = base_class_name then
-      (* 前者は特別に Class table に入れている Object のため *)
+  let env = Environment.empty in
+  let rec check_class_super table env n =
+    if n = base_class_name then
+      (* Object の super は辿らない *)
       ()
     else
-      let super_name = Class.super (get_class table name2) in
-      if name1 = name2 || name2 = super_name then
-        raise (Type_error (Lexing.dummy_pos, "cyclic inheritance involving " ^ name1))
+      let klass = get_class table n in
+      let env = Environment.add n klass env in
+      let super_name = Class.super klass in
+      (* super を辿っていくうちに同じ型が現れた場合はエラー *)
+      if Environment.mem super_name env then
+        raise (Type_error (
+          Class.position klass,
+          "cyclic inheritance involving " ^ name))
       else
-        check_class_super table name1 super_name
+        check_class_super table env super_name
   in
-    check_class_super table name (Class.super (get_class table name))
+  check_class_super table env name
 
 (* フィールド名の重複チェック *)
 (* Type.t Environment.t -> Class.t -> Field.t -> unit *)
