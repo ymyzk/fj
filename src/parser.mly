@@ -74,7 +74,7 @@ field_initializer_list :
   | field_initializer SEMICOLON field_initializer_list { $1 :: $3 }
 
 field_initializer :
-    THIS PERIOD ID EQ ID { FieldSet (Var (Id.make "this"), $3, Var $5) }
+    THIS PERIOD ID EQ ID { ($3, Var $5) }
 
 method_definition_list :
     { [] }

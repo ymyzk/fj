@@ -126,21 +126,6 @@ let rec check_exp table env = function
       let k0 = get_class table (check_exp table env e0) in
       let f0 = get_field table k0 n0 in
       Field.ty f0
-  | FieldSet(e0, { Id.name = n0; position = p0; }, e1) -> (* e0.n0 = e1 *)
-      begin match e0, n0, e1 with
-      | (Var { Id.name = "this"; position = _; }), _, (Var _) ->
-        let k0 = get_class table (check_exp table env e0) in (* e0 (this) : k0 *)
-        let f0 = get_field table k0 n0 in
-        let t0 = Field.ty f0 in (* e0.n0 : t0 *)
-        let t1 = check_exp table env e1 in (* e1 : t1 *)
-        if t0 <> t1 then
-          (* フィールドの初期化は型が一致していなければならない *)
-          raise (Type_error (
-            p0,
-            "cannot initialize field with different type: '" ^ t0 ^ "' != '" ^ t1 ^ "'"));
-        t0
-      | _, _, _ -> raise (Type_error (Lexing.dummy_pos, "not supported"))
-      end
   | MethodCall(e0, { Id.name = n0; position = p0; }, ps0) -> (* e0.m0(ps0) *)
       let ts0 = List.map (check_exp table env) ps0 in
       let k0 = get_class table (Type.name (check_exp table env e0)) in
@@ -220,9 +205,7 @@ let check_fields env klass =
 let check_uninitialized_fields klass =
   let constructor_fields =
     List.map
-      (function
-          FieldSet(_, { Id.name = n; position = _; }, _) -> n
-        | _ -> raise (Type_error (Lexing.dummy_pos, "unknown")))
+      (fun f -> Id.name (fst f))
       (Constructor.body (Class.constructor klass)) in
   let constructor_fields = List.sort compare constructor_fields in
   let class_fields = List.map Field.name (Class.fields klass) in
@@ -248,11 +231,7 @@ let check_constructor_parameters_used constructor =
   (* フィールドの初期化は this.n0 = n1 の形で, n0 = n1 かつ n0, n1 は id *)
   let fields =
     List.map
-      (function
-          FieldSet(_, { Id.name = n0; position = _; }, Var({ Id.name = n1; position = _;})) when n0 = n1 -> n0
-        | FieldSet(_, { Id.name = _; position = p0; }, Var(_)) ->
-            raise (Type_error (p0, "invalid field initialization"))
-        | _ -> raise (Type_error (Lexing.dummy_pos, "unknown")))
+      (fun f -> Id.name (fst f))
       (Constructor.body constructor) in
   let fields = List.sort compare fields in
   let arguments =
@@ -270,11 +249,29 @@ let check_constructor_parameters_used constructor =
   else
     ()
 
-(* コンストラクタ本体 (フィールドの初期化) の型チェック *)
-(* Class.t Environment.t Type.t Environment.t Constructor.t -> unit *)
-let check_constructor_fields table env constructor =
+(* フィールド初期化の型チェック *)
+(* Class.t Environment.t -> Type.t Environment.t -> Constructor.t -> Id.t * exp -> unit *)
+let check_field_initialization table env constructor = function
+    (n0, Var n1) when Id.name n0 = Id.name n1 ->
+      let class_name = Constructor.name constructor in
+      let k0 = get_class table (Type.make class_name) in (* this : k0 *)
+      let f0 = get_field table k0 (Id.name n0) in
+      let t0 = Field.ty f0 in (* this.n0 : t0 *)
+      let t1 = check_exp table env (Var n1) in (* e1 : t1 *)
+      if t0 <> t1 then
+        (* フィールドの初期化は型が一致していなければならない *)
+        raise (Type_error (
+          Id.position n0,
+          "cannot initialize field with different type: '" ^ t0 ^ "' != '" ^ t1 ^ "'"));
+      ()
+  | (n0, _) ->
+      raise (Type_error (Id.position n0, "invalid field initialization"))
+
+(* フィールドの初期化の型チェック *)
+(* Class.t Environment.t -> Type.t Environment.t Constructor.t -> unit *)
+let check_field_initializations table env constructor =
   List.iter
-    (fun e -> ignore (check_exp table env e))
+    (check_field_initialization table env constructor)
     (Constructor.body constructor)
 
 (* スーパークラスのコンストラクタ呼び出しの型チェック *)
@@ -320,7 +317,7 @@ let rec check_constructor table env klass =
   (* パラメータのチェックと環境への追加 *)
   let env' = check_constructor_parameters env constructor in
   (* フィールドの初期化のチェック *)
-  check_constructor_fields table env' constructor;
+  check_field_initializations table env' constructor;
   (* スーパークラスコンストラクタ呼び出しのチェック *)
   check_constructor_super table env' klass;
   (* 全てのパラメータが重複なく利用されているかチェック *)

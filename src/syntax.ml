@@ -13,7 +13,6 @@ end
 type exp =
     Var of Id.t
   | FieldGet of exp * Id.t
-  | FieldSet of exp * Id.t * exp
   | MethodCall of exp * Id.t * exp list
   | New of Id.t * exp list
   | Cast of Id.t * exp
@@ -41,7 +40,7 @@ module Constructor = struct
   type t = {
     name: Id.t;
     parameters: (Id.t * Type.t) list;
-    body: exp list;
+    body: (Id.t * exp) list;
     super_arguments: exp list;
   }
 
