@@ -164,17 +164,19 @@ let rec check_exp table env = function
         end
 
 (* クラスの部分型関係のチェック *)
-(* Class.t Environment.t -> Type.t -> unit *)
-let check_class_super table name =
+(* Class.t Environment.t -> Class.t -> unit *)
+let check_class_super table klass =
+  let name = Class.name klass in
+  let position = Class.position klass in
   let env = Environment.empty in
   let rec check_class_super table env n =
     if n = base_class_name then
       (* Object の super は辿らない *)
       ()
     else
-      let klass = get_class table n in
-      let env = Environment.add n klass env in
-      let super_name = Class.super klass in
+      let klass' = get_class table n ~position:position in
+      let env = Environment.add n klass' env in
+      let super_name = Class.super klass' in
       (* super を辿っていくうちに同じ型が現れた場合はエラー *)
       if Environment.mem super_name env then
         raise (Type_error (
@@ -399,7 +401,7 @@ let check_methods table env klass =
 (* クラスのチェック *)
 (* Class.t Environment.t -> Type.t Environment.t -> Class.t -> unit *)
 let check_class table env klass =
-  check_class_super table (Class.name klass);
+  check_class_super table klass;
   let env' = Environment.add "this" (Class.ty klass) env in
   (* フィールドのチェック *)
   let env' = check_fields table env' klass in
