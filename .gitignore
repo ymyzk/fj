@@ -31,3 +31,5 @@ main.opt
 parser.ml
 parser.mli
 parser.output
+test
+test.opt
