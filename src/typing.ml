@@ -32,18 +32,18 @@ let create_classtable classes =
     let name = Class.name klass in
     if Environment.mem name tb then
       (* 同じ名前のクラス名が複数あればエラー *)
-      raise (Type_error (Class.position klass,"duplicate class: " ^ name))
+      raise (Type_error (Class.position klass, "duplicate class: " ^ name))
     else
       Environment.add name klass tb
   end table classes
 
 (* クラステーブルからクラスを取得する *)
 (* Class.t Environment.t -> Type.t -> Class.t *)
-let get_class table name =
+let get_class ?(position=Lexing.dummy_pos) table name =
   try
     Environment.find name table
   with Not_found ->
-    raise (Type_error (Lexing.dummy_pos, "the class is not found in table: " ^ name))
+    raise (Type_error (position, "the class is not found in table: " ^ name))
 
 (* クラステーブルからスーパークラスを取得する *)
 (* Class.t Environment.t -> Class.t -> Class.t *)
@@ -75,7 +75,7 @@ let rec is_subclasses table l0 l1 =
       (is_subclass table k0 k1) && (is_subclasses table ks0 ks1)
 
 (* クラスからフィールドを取得する処理 *)
-(* Class.t Environment.t -> Class.t -> id -> Field.t *)
+(* Class.t Environment.t -> Class.t -> Type.t -> Field.t *)
 let get_field table klass name =
   let rec get_field table klass' name =
     try
@@ -185,24 +185,22 @@ let check_class_super table name =
   in
   check_class_super table env name
 
-(* フィールド名の重複チェック *)
-(* Type.t Environment.t -> Class.t -> Field.t -> unit *)
-let check_field env klass field =
-  let name = Field.name field in
-  if Environment.mem name env then
-    raise (Type_error (
-      Field.position field,
-      "variable " ^ name ^ " is already defined in class " ^ (Class.name klass)));
-  ()
-
 (* クラスのフィールドのチェックと env へのフィールドの追加 *)
-(* Type.t Environment.t -> Class.t -> Type.t Environment.t *)
-let check_fields env klass =
+(* Class.t Environment.t -> Type.t Environment.t -> Class.t -> Type.t Environment.t *)
+let check_fields table env klass =
   List.fold_left begin
     fun env' field ->
       let name = Field.name field in
       let ty = Field.ty field in
-      check_field env' klass field;
+      let position = Field.position field in
+      (* 重複チェック *)
+      if Environment.mem name env' then
+        raise (Type_error (
+          Field.position field,
+          "variable " ^ name ^ " is already defined in class " ^ (Class.name klass)));
+      (* フィールドの型が存在するかどうか *)
+      get_class table ty ~position:position;
+      (* OK *)
       Environment.add name ty env'
   end env (Class.fields klass)
 
@@ -398,7 +396,7 @@ let check_class table env klass =
   check_class_super table (Class.name klass);
   let env' = Environment.add "this" (Class.ty klass) env in
   (* フィールドのチェック *)
-  let env' = check_fields env' klass in
+  let env' = check_fields table env' klass in
   (* 初期化されていないフィールドが存在しないかのチェック *)
   check_uninitialized_fields klass;
   (* コンストラクタのチェック *)

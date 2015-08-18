@@ -331,47 +331,6 @@ let test_check_class_super test_cxt =
     assert_equal (check_class_super table "D") ()
   end
 
-let test_check_field test_cxt =
-  let type_b = Type.make "B" in
-  let class_a = {
-    Class.name = Id.make "A";
-    super = "Object";
-    fields = [
-      {
-        Field.name = Id.make "b1";
-        ty = type_b
-      };
-      {
-        Field.name = Id.make "b2";
-        ty = type_b
-      }
-    ];
-    constructor = {
-      Constructor.name = Id.make "A";
-      parameters = [];
-      body = [];
-      super_arguments = [];
-    };
-    methods = [];
-  } in
-  let env = Environment.empty in
-  let fields = Class.fields class_a in
-  let f1 = List.hd fields in
-  begin
-    (* 空の環境にフィールド b1 を追加 *)
-    assert_equal (check_field env class_a f1) ();
-    let env = Environment.add (Field.name f1) (Field.ty f1) env in
-    let f2 = List.nth fields 1 in
-    begin
-      (* b1 のみの環境にフィールド b2 を追加 *)
-      assert_equal (check_field env class_a f2) ();
-      (* b1 のみの環境にフィールド b1 を追加 *)
-      assert_raises
-        (Type_error (Lexing.dummy_pos, "variable b1 is already defined in class A"))
-        (fun _ -> (check_field env class_a f1))
-    end
-  end
-
 let test_check_fields test_cxt =
   let type_b = Type.make "B" in
   let class_a = {
@@ -416,13 +375,14 @@ let test_check_fields test_cxt =
     };
     methods = [];
   } in
-  let env = check_fields Environment.empty class_a in
+  let table = create_classtable [class_a; class_c] in
+  let env = check_fields table Environment.empty class_a in
   begin
     assert_equal (Environment.find "b1" env) type_b;
     assert_equal (Environment.find "b2" env) type_b;
     assert_raises
       (Type_error (Lexing.dummy_pos, "variable b1 is already defined in class C"))
-      (fun _ -> (check_fields Environment.empty class_c))
+      (fun _ -> (check_fields table Environment.empty class_c))
   end
 
 let suite =
@@ -433,7 +393,6 @@ let suite =
     "test_get_field">:: test_get_field;
     "test_get_method">:: test_get_method;
     "test_check_class_super">:: test_check_class_super;
-    "test_check_field">:: test_check_field;
     "test_check_fields">:: test_check_fields]
 
 let () = run_test_tt_main suite
