@@ -323,12 +323,12 @@ let test_check_class_super test_cxt =
   begin
     assert_raises
       (Type_error (Lexing.dummy_pos, "cyclic inheritance involving A"))
-      (fun _ -> check_class_super table "A");
+      (fun _ -> check_class_super table (List.hd classes));
     assert_raises
       (Type_error (Lexing.dummy_pos, "cyclic inheritance involving B"))
-      (fun _ -> check_class_super table "B");
-    assert_equal (check_class_super table "C") ();
-    assert_equal (check_class_super table "D") ()
+      (fun _ -> check_class_super table (List.nth classes 1));
+    assert_equal (check_class_super table (List.nth classes 2)) ();
+    assert_equal (check_class_super table (List.nth classes 3)) ()
   end
 
 let test_check_fields test_cxt =
