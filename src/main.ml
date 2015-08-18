@@ -17,7 +17,6 @@ let print_error2 start message =
 
 (* 1つのファイルを読み込んでパース処理を行い, Type checker にかける *)
 let read_from_file file =
-  print_info file "reading";
   let ic = open_in file in
   let lexbuf = Lexing.from_channel ic in
   lexbuf.Lexing.lex_curr_p <- {
@@ -26,9 +25,7 @@ let read_from_file file =
   };
   try
     let classes = Parser.toplevel Lexer.main lexbuf in
-    print_info file "running type check";
-    check classes;
-    print_info file "completed"
+    check classes
   with e ->
     begin match e with
       Failure message ->
