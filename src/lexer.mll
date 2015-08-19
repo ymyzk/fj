@@ -34,7 +34,7 @@ rule main = parse
   | "}" { Parser.RBRACE }
   | ")" { Parser.RPAREN }
   | ";" { Parser.SEMICOLON }
-  | ['a'-'z' 'A'-'Z']+ {
+  | ['a'-'z' 'A'-'Z' '_' '$']['a'-'z' 'A'-'Z' '_' '$' '0'-'9']+ {
     let id = Lexing.lexeme lexbuf in
     try
       List.assoc id reservedWords
