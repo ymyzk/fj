@@ -92,13 +92,17 @@ method_definition :
       }
     }
 
+parenthesized_expression :
+  LPAREN expression RPAREN { $2 }
+
 expression :
     expression_1 { $1 }
+  | parenthesized_expression { $1 }
   | NEW ID LPAREN argument_list_opt RPAREN { New ($2, $4) }
   | LPAREN ID RPAREN expression { Cast ($2, $4) }
 
 expression_1 :
     ID { Var $1 }
   | THIS { Var (Id.make "this") }
-  | expression_1 PERIOD ID { FieldGet ($1, $3) }
-  | expression_1 PERIOD ID LPAREN argument_list_opt RPAREN { MethodCall ($1, $3, $5) }
+  | expression PERIOD ID { FieldGet ($1, $3) }
+  | expression PERIOD ID LPAREN argument_list_opt RPAREN { MethodCall ($1, $3, $5) }
