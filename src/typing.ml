@@ -380,7 +380,8 @@ let check_method table env klass meth =
   if not (is_subclass table (Method.return_type meth) ty) then
     raise (Type_error (
       Method.position meth,
-      "invalid method return type: " ^ (Method.name meth)));
+      sprintf "invalid return type for %s (got: %s, expected: %s)"
+        (Method.name meth) (Method.return_type meth) ty));
   check_method_override table klass meth
 
 (* クラスのすべてのメソッドのチェック *)
